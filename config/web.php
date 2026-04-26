@@ -36,7 +36,7 @@ $config = [
             'on afterLogin' => function ($event) {
                 $user = $event->identity;
                 if ($user->ROL === 'ADMINISTRADOR' || $user->ROL === 'SUPER_ADMIN') {
-                    $logService = new \app\services\AdminAccessLogService();
+                    $logService = new \app\components\services\AdminAccessLogService();
                     $logService->registerAccess($user);
                 }
             },

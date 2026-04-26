@@ -11,6 +11,7 @@ use yii\helpers\Html;
     <?= Html::csrfMetaTags() ?>
     <title><?= Html::encode($this->title) ?></title>
     <?php $this->head() ?>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body, html { 
             height: 100%; 
@@ -23,9 +24,7 @@ use yii\helpers\Html;
 </head>
 <body>
 <?php $this->beginBody() ?>
-    
     <?= $content ?>
-
 <?php $this->endBody() ?>
 </body>
 </html>

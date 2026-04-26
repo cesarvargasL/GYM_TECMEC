@@ -1,5 +1,5 @@
 <?php
-namespace app\services;
+namespace app\components\services;
 
 use Yii;
 use app\models\User;

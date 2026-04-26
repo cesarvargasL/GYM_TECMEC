@@ -1,6 +1,7 @@
 <?php
 use yii\helpers\Html;
-use yii\bootstrap5\ActiveForm; ?>
+use yii\bootstrap5\ActiveForm; 
+?>
 
 <div style="display: flex; justify-content: center; align-items: center; height: 100vh; width: 100%;">
     <div style="background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); text-align: center; width: 100%; max-width: 400px;">
@@ -26,3 +27,28 @@ use yii\bootstrap5\ActiveForm; ?>
         <?php ActiveForm::end(); ?>
     </div>
 </div>
+
+<?php foreach ($flashes as $type => $message): ?>
+    <?php 
+        $bgColor = $type === 'error' ? '#dc3545' : '#28a745'; // Rojo o Verde Bootstrap
+    ?>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                background: '<?= $bgColor ?>',
+                color: '#ffffff',
+                iconColor: '#ffffff'
+            });
+            
+            Toast.fire({
+                icon: '<?= $type === "error" ? "error" : "success" ?>',
+                title: '<?= $message ?>'
+            });
+        });
+    </script>
+<?php endforeach; ?>
