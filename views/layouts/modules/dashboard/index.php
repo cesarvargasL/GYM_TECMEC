@@ -1,6 +1,10 @@
 <?php
 use yii\helpers\Html;
 use yii\helpers\Url;
+use app\components\shared\ToasterWidgetComponent\smart\ToasterContainer;
+use app\shared\AppConst;
+
+$currentRoute = Yii::$app->controller->id . '/' . Yii::$app->controller->action->id;
 ?>
 
 <?php $this->beginPage() ?>
@@ -37,8 +41,9 @@ use yii\helpers\Url;
         </div>
         
         <ul class="nav-links">
-            <li><a href="#">Crear Usuario</a></li>
-            <li><a href="<?= Url::to(['dashboard/index']) ?>" class="active">Registro</a></li>
+            <li><a href="<?= Url::to(['user-management/create']) ?>" class="<?= $currentRoute === 'user-management/create' ? 'active' : AppConst::EMPTY ?>">Crear Usuario</a></li>
+            <li><a href="#">Control de Entrada</a></li>
+            <li><a href="<?= Url::to(['dashboard/index']) ?>" class="<?= $currentRoute === 'dashboard/index' ? 'active' : AppConst::EMPTY ?>">Registro</a></li>
             <li><a href="#">Membresía</a></li>
             <li><a href="#">Usuarios</a></li>
             <li><a href="#">Historial</a></li>
@@ -73,6 +78,7 @@ use yii\helpers\Url;
 
         </section>
     </main>
+    <?= ToasterContainer::widget() ?>
 
 <?php $this->endBody() ?>
 </body>
