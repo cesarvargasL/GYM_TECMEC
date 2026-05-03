@@ -13,9 +13,6 @@ use yii\web\Response;
 
 class LoginController extends Controller
 {
-    /**
-     * {@inheritdoc}
-     */
     public function behaviors(): array
     {
         return [
@@ -39,9 +36,6 @@ class LoginController extends Controller
         ];
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function actions(): array
     {
         return [
@@ -68,15 +62,24 @@ class LoginController extends Controller
         }
 
         $this->layout = 'modules/login/index';
-        return $this->render('//modules/auth/index', [
+        return $this->render('//modules/auth/login/index', [
             'model' => $model
         ]);
+    }
+
+    public function actionRegister(): Response|string
+    {
+        if (!Yii::$app->user->isGuest) {
+            return $this->redirect(['dashboard/index']);
+        }
+
+        $this->layout = 'modules/login/index';
+        return $this->render('//modules/auth/register/index');
     }
 
     public function actionLogout(): Response
     {
         Yii::$app->user->logout();
-
         return $this->redirect(['login/login']);
     }
 }

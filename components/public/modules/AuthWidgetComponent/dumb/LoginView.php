@@ -24,13 +24,16 @@ use yii\bootstrap5\ActiveForm;
             <?= Html::submitButton('INICIA SESIÓN', ['class' => 'btn btn-success', 'name' => 'login-button', 'style' => 'width: 100%; font-weight: bold; border-radius: 20px;']) ?>
         </div>
 
+        <div class="form-group" style="margin-top: 15px;">
+            <?= Html::a('¿No tienes cuenta? Regístrate', ['login/register'], ['class' => 'btn btn-outline-primary', 'style' => 'width: 100%; font-weight: bold; border-radius: 20px;']) ?>
+        </div>
         <?php ActiveForm::end(); ?>
     </div>
 </div>
 
 <?php foreach ($flashes as $type => $message): ?>
     <?php 
-        $bgColor = $type === 'error' ? '#dc3545' : '#28a745'; // Rojo o Verde Bootstrap
+        $bgColor = $type === 'error' ? '#dc3545' : '#28a745';
     ?>
     <script>
         document.addEventListener('DOMContentLoaded', function() {

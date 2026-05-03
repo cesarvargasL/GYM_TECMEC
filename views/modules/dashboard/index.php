@@ -3,7 +3,7 @@ use yii\helpers\Html;
 use app\components\secure\modules\DailyAccessLogWidgetComponent\smart\DailyAccessLogContainer;
 
 
-$this->title = 'Admin Access Control';
+$this->title = 'GYM - Tecmec';
 ?>
 
 <div class="dashboard-index" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
