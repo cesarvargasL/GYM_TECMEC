@@ -1,5 +1,6 @@
 <?php
 use yii\helpers\Html;
+use app\components\shared\ToasterWidgetComponent\smart\ToasterContainer;
 ?>
 
 <?php $this->beginPage() ?>
@@ -25,6 +26,7 @@ use yii\helpers\Html;
 <body>
 <?php $this->beginBody() ?>
     <?= $content ?>
+    <?= ToasterContainer::widget() ?>
 <?php $this->endBody() ?>
 </body>
 </html>

@@ -8,20 +8,28 @@ use app\shared\AppConst;
 use app\shared\enums\Roles;
 use app\shared\enums\ClientType;
 use app\shared\enums\ClientStatus;
+
 class CreateUserContainer extends Widget
 {
+    public bool $isPublicContext = false;
+
     public function run()
     {
         $model = new User();
 
-        $currentUserRole = Yii::$app->user->identity->ROL;
+        $currentUserRole = $this->isPublicContext ? null : Yii::$app->user->identity->ROL;
 
         if ($model->load(Yii::$app->request->post())) {
-            if ($currentUserRole === Roles::ADMINISTRATOR->value && $model->ROL !== Roles::CLIENT->value) {
-                Yii::$app->session->setFlash('error', 'Violación de Seguridad: No tienes permisos para crear este tipo de usuario.');
-                Yii::$app->response->redirect(['user-management/create']);
-                Yii::$app->end();
-                return AppConst::EMPTY;
+            
+            if ($this->isPublicContext) {
+                $model->ROL = Roles::CLIENT->value; 
+            } else {
+                if ($currentUserRole === Roles::ADMINISTRATOR->value && $model->ROL !== Roles::CLIENT->value) {
+                    Yii::$app->session->setFlash('error', 'Violación de Seguridad: No tienes permisos para crear este tipo de usuario.');
+                    Yii::$app->response->redirect(['user-management/create']);
+                    Yii::$app->end();
+                    return AppConst::EMPTY;
+                }
             }
             
             if (empty($model->CI)) {
@@ -55,36 +63,43 @@ class CreateUserContainer extends Widget
                 }
 
                 if ($model->validate()) {
-                if ($model->save(false)) {
-                    Yii::$app->session->setFlash('success', 'Usuario creado correctamente.');
-                    
-                    Yii::$app->response->redirect(['dashboard/index']);
-                    Yii::$app->end(); 
-                    return AppConst::EMPTY; 
+                    if ($model->save(false)) {
+                        
+                        if ($this->isPublicContext) {
+                            Yii::$app->session->setFlash('success', 'Registro exitoso. Por favor, inicia sesión.');
+                            Yii::$app->response->redirect(['login/login']);
+                        } else {
+                            Yii::$app->session->setFlash('success', 'Usuario creado correctamente.');
+                            Yii::$app->response->redirect(['dashboard/index']);
+                        }
+                        
+                        Yii::$app->end(); 
+                        return AppConst::EMPTY; 
+                    }
+                } else {
+                    $errores = implode(", ", \yii\helpers\ArrayHelper::getColumn($model->getErrors(), 0));
+                    Yii::$app->session->setFlash('error', 'Error: ' . $errores);
                 }
-            } else {
-                $errores = implode(", ", \yii\helpers\ArrayHelper::getColumn($model->getErrors(), 0));
-                Yii::$app->session->setFlash('error', 'Error: ' . $errores);
-            }
             }
         }
 
         $availableRoles = [];
-        if ($currentUserRole === Roles::SUPER_ADMIN->value) {
-            $availableRoles = [
-                Roles::CLIENT->value => 'Cliente',
-                Roles::ADMINISTRATOR->value => 'Administrador',
-                Roles::SUPER_ADMIN->value => 'Super Admin'
-            ];
-        } else {
-            $availableRoles = [
-                Roles::CLIENT->value => 'Cliente'
-            ];
+        if (!$this->isPublicContext) {
+            if ($currentUserRole === Roles::SUPER_ADMIN->value) {
+                $availableRoles = [
+                    Roles::CLIENT->value => 'Cliente',
+                    Roles::ADMINISTRATOR->value => 'Administrador',
+                    Roles::SUPER_ADMIN->value => 'Super Admin'
+                ];
+            } else {
+                $availableRoles = [ Roles::CLIENT->value => 'Cliente' ];
+            }
         }
 
         return $this->render('@app/components/secure/modules/UserManagementWidgetComponent/CreateUser/dumb/CreateUserFormView', [
             'model' => $model,
-            'availableRoles' => $availableRoles
+            'availableRoles' => $availableRoles,
+            'isPublicContext' => $this->isPublicContext 
         ]);
     }
 }
