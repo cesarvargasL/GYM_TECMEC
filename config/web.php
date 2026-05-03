@@ -1,4 +1,5 @@
 <?php
+use app\shared\enums\Roles;
 
 $params = require __DIR__ . '/params.php';
 $db = require __DIR__ . '/db.php';
@@ -35,7 +36,7 @@ $config = [
             'loginUrl' => ['login/login'],
             'on afterLogin' => function ($event) {
                 $user = $event->identity;
-                if ($user->ROL === 'ADMINISTRADOR' || $user->ROL === 'SUPER_ADMIN') {
+                if ($user->ROL === Roles::ADMINISTRATOR || $user->ROL === Roles::SUPER_ADMIN) {
                     $logService = new \app\components\services\AdminAccessLogService();
                     $logService->registerAccess($user);
                 }

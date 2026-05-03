@@ -5,14 +5,24 @@ use Yii;
 use yii\base\Widget;
 use app\models\User;
 use app\shared\AppConst;
-
+use app\shared\enums\Roles;
+use app\shared\enums\ClientType;
+use app\shared\enums\ClientStatus;
 class CreateUserContainer extends Widget
 {
     public function run()
     {
         $model = new User();
 
+        $currentUserRole = Yii::$app->user->identity->ROL;
+
         if ($model->load(Yii::$app->request->post())) {
+            if ($currentUserRole === Roles::ADMINISTRATOR->value && $model->ROL !== Roles::CLIENT->value) {
+                Yii::$app->session->setFlash('error', 'Violación de Seguridad: No tienes permisos para crear este tipo de usuario.');
+                Yii::$app->response->redirect(['user-management/create']);
+                Yii::$app->end();
+                return AppConst::EMPTY;
+            }
             
             if (empty($model->CI)) {
                 Yii::$app->session->setFlash('error', 'El Carnet de Identidad (CI) es obligatorio.');
@@ -21,11 +31,11 @@ class CreateUserContainer extends Widget
                 $model->PASSWORD = Yii::$app->security->generatePasswordHash((string)$model->CI);
                 $model->USER_NAME = $model->CI; 
 
-                if ($model->ROL === 'ADMINISTRADOR' || $model->ROL === 'SUPER_ADMIN') {
-                    $model->TIPO_CLIENTE = 'EXTERNO';
-                    $model->ESTADO = 'ACTIVO';
-                } elseif ($model->TIPO_CLIENTE === 'EXTERNO') {
-                    $model->ESTADO = 'ACTIVO';
+                if ($model->ROL === Roles::ADMINISTRATOR->value || $model->ROL === Roles::SUPER_ADMIN->value) {
+                    $model->TIPO_CLIENTE = ClientType::EXTERNAL->value;
+                    $model->ESTADO = ClientStatus::ACTIVE->value;
+                } elseif ($model->TIPO_CLIENTE === ClientType::EXTERNAL->value) {
+                    $model->ESTADO = ClientStatus::ACTIVE->value;
                 }
 
                 $fotoBase64 = Yii::$app->request->post('foto_webcam');
@@ -59,8 +69,22 @@ class CreateUserContainer extends Widget
             }
         }
 
+        $availableRoles = [];
+        if ($currentUserRole === Roles::SUPER_ADMIN->value) {
+            $availableRoles = [
+                Roles::CLIENT->value => 'Cliente',
+                Roles::ADMINISTRATOR->value => 'Administrador',
+                Roles::SUPER_ADMIN->value => 'Super Admin'
+            ];
+        } else {
+            $availableRoles = [
+                Roles::CLIENT->value => 'Cliente'
+            ];
+        }
+
         return $this->render('@app/components/secure/modules/UserManagementWidgetComponent/CreateUser/dumb/CreateUserFormView', [
             'model' => $model,
+            'availableRoles' => $availableRoles
         ]);
     }
 }

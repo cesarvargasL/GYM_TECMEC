@@ -1,6 +1,9 @@
 <?php
 use yii\helpers\Html;
 use yii\bootstrap5\ActiveForm;
+use app\shared\enums\ClientType;
+use app\shared\enums\ClientStatus;
+
 ?>
 <div class="create-user-form-view" style="padding: 20px;">
 
@@ -17,21 +20,18 @@ use yii\bootstrap5\ActiveForm;
             ],
         ]); ?>
 
-        <?= $form->field($model, 'ROL')->dropDownList([
-            'CLIENTE' => 'Cliente',
-            'ADMINISTRADOR' => 'Administrador',
-            'SUPER_ADMIN' => 'Super Admin'
-        ], ['prompt' => 'Seleccione un Rol', 'id' => 'drop-rol']) ?>
+        <?= $form->field($model, 'ROL')->dropDownList($availableRoles, ['prompt' => 'Seleccione un Rol', 'id' => 'drop-rol']) ?>
 
         <?= $form->field($model, 'CI')->textInput(['placeholder' => 'Carnet de Identidad', 'id' => 'input-ci']) ?>
         <?= $form->field($model, 'NOMBRE_COMPLETO')->textInput(['id' => 'input-nombre']) ?>
         <?= $form->field($model, 'CORREO_ELECTRONICO')->textInput(['placeholder' => 'email@gym.com']) ?>
-        <?= $form->field($model, 'ESTADO')->hiddenInput(['value' => 'ACTIVO', 'id' => 'input-estado'])->label(false) ?>
+        
+        <?= $form->field($model, 'ESTADO')->hiddenInput(['value' => ClientStatus::ACTIVE->value, 'id' => 'input-estado'])->label(false) ?>
 
         <div id="section-tipo-cliente" style="display: none;">
             <?= $form->field($model, 'TIPO_CLIENTE')->dropDownList([
-                'EXTERNO' => 'Externo',
-                'UNIVERSITARIO' => 'Universitario'
+                ClientType::EXTERNAL->value => 'Externo',
+                ClientType::UNIVERSITY_STUDENT->value => 'Universitario'
             ], ['prompt' => 'Seleccione Tipo', 'id' => 'drop-tipo-cliente']) ?>
         </div>
 
