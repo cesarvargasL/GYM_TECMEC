@@ -22,6 +22,7 @@ $currentUserRole = Yii::$app->user->identity->ROL ?? null;
     <?= Html::csrfMetaTags() ?>
     <title><?= Html::encode($this->title) ?></title>
     <?php $this->head() ?>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
         body { margin: 0; font-family: sans-serif; display: flex; height: 100vh; background: #f4f6f9; }
@@ -55,13 +56,18 @@ $currentUserRole = Yii::$app->user->identity->ROL ?? null;
             <li><a href="<?= Url::to(['plan/index']) ?>" class="<?= $currentRoute === 'plan/index' ? 'active' : AppConst::EMPTY ?>">Planes</a></li>
             <li><a href="#">Usuarios</a></li>
             <li><a href="#">Historial</a></li>
-            <li><a href="#">Configuraciones</a></li>
+            <li><a href="<?= Url::to(['settings/index']) ?>" class="<?= $currentRoute === 'settings/index' ? 'active' : AppConst::EMPTY ?>">Configuraciones</a></li>
         </ul>
         
         <div class="user-profile">
-            <div style="width: 40px; height: 40px; background: #0056b3; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center;">
-                <?= strtoupper(substr(Yii::$app->user->identity->NOMBRE_COMPLETO ?? 'A', 0, 1)) ?>
-            </div>
+            <?php if (Yii::$app->user->identity->AVATAR): ?>
+                <img src="<?= Html::encode(Yii::$app->user->identity->AVATAR) ?>" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #0056b3;">
+            <?php else: ?>
+                <div style="width: 40px; height: 40px; background: #0056b3; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px;">
+                    <?= strtoupper(substr(Yii::$app->user->identity->NOMBRE_COMPLETO ?? 'A', 0, 1)) ?>
+                </div>
+            <?php endif; ?>
+
             <div style="text-align: left; line-height: 1.2;">
                 <strong><?= Yii::$app->user->identity->NOMBRE_COMPLETO ?? 'Admin' ?></strong><br>
                 <small style="color: #666;"><?= Yii::$app->user->identity->ROL ?? 'Rol' ?></small>
@@ -81,13 +87,10 @@ $currentUserRole = Yii::$app->user->identity->ROL ?? null;
             Registro
         </header>
         <section class="content-body">
-            
             <?= $content ?> 
-
+            <?= ToasterContainer::widget() ?>
         </section>
     </main>
-    <?= ToasterContainer::widget() ?>
-
 <?php $this->endBody() ?>
 </body>
 </html>
