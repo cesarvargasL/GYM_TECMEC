@@ -4,9 +4,13 @@ use yii\helpers\Url;
 use app\components\shared\ToasterWidgetComponent\smart\ToasterContainer;
 use app\shared\AppConst;
 use app\shared\enums\Roles;
+use yii\web\YiiAsset;
+
+YiiAsset::register($this); 
 
 $currentRoute = Yii::$app->controller->id . '/' . Yii::$app->controller->action->id;
 $currentUserRole = Yii::$app->user->identity->ROL ?? null;
+
 ?>
 
 <?php $this->beginPage() ?>
@@ -48,7 +52,7 @@ $currentUserRole = Yii::$app->user->identity->ROL ?? null;
             <?php endif; ?>
             <li><a href="#">Control de Entrada</a></li>
             <li><a href="<?= Url::to(['dashboard/index']) ?>" class="<?= $currentRoute === 'dashboard/index' ? 'active' : AppConst::EMPTY ?>">Registro</a></li>
-            <li><a href="#">Membresía</a></li>
+            <li><a href="<?= Url::to(['plan/index']) ?>" class="<?= $currentRoute === 'plan/index' ? 'active' : AppConst::EMPTY ?>">Planes</a></li>
             <li><a href="#">Usuarios</a></li>
             <li><a href="#">Historial</a></li>
             <li><a href="#">Configuraciones</a></li>

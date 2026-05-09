@@ -41,6 +41,7 @@ class LoginController extends Controller
         return [
             'error' => [
                 'class' => ErrorAction::class,
+                'view' => '@app/views/modules/auth/error',
             ],
         ];
     }
