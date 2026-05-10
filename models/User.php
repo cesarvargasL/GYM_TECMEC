@@ -17,8 +17,9 @@ class User extends ActiveRecord implements IdentityInterface
     {
         return [
             [['CI', 'NOMBRE_COMPLETO', 'CORREO_ELECTRONICO', 'ROL'], 'required'],
-            [['TIPO_CLIENTE', 'ESTADO', 'TELEFONO', 'AVATAR', 'USER_NAME', 'PASSWORD'], 'safe'],
+            [['TIPO_CLIENTE', 'ESTADO', 'TELEFONO', 'AVATAR', 'USER_NAME', 'PASSWORD', 'HUELLA', 'ES_BORRADO'], 'safe'],
             [['CI'], 'unique', 'message' => 'Este CI ya está registrado en el sistema.'],
+            [['CORREO_ELECTRONICO'], 'email', 'message' => 'Por favor, ingrese un correo válido.'], 
         ];
     }
 
