@@ -1,7 +1,7 @@
 <?php
 use app\components\secure\modules\SettingsWidgetComponent\smart\SettingsContainer;
 
-$this->title = 'Configuraciones - Gym Universitario';
+$this->title = 'Configurar perfil';
 ?>
 
 <?= SettingsContainer::widget() ?>

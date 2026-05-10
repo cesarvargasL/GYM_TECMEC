@@ -167,12 +167,13 @@ $currentUserRole = Yii::$app->user->identity->ROL ?? null;
             <?php if ($currentUserRole === Roles::ADMINISTRATOR->value || $currentUserRole === Roles::SUPER_ADMIN->value): ?>
                 <li><a href="<?= Url::to(['user-management/create']) ?>" class="<?= $currentRoute === 'user-management/create' ? 'active' : AppConst::EMPTY ?>">Crear Usuario</a></li>
                 <li><a href="<?= Url::to(['user-management/index']) ?>" class="<?= $currentRoute === 'user-management/index' ? 'active' : AppConst::EMPTY ?>">Usuarios</a></li>
+                <li><a href="#">Control de Entrada</a></li>
+                <li><a href="<?= Url::to(['dashboard/index']) ?>" class="<?= $currentRoute === 'dashboard/index' ? 'active' : AppConst::EMPTY ?>">Registro</a></li>
+                <li><a href="#">Historial</a></li>
             <?php endif; ?>
-            <li><a href="#">Control de Entrada</a></li>
-            <li><a href="<?= Url::to(['dashboard/index']) ?>" class="<?= $currentRoute === 'dashboard/index' ? 'active' : AppConst::EMPTY ?>">Registro</a></li>
+            
             <li><a href="<?= Url::to(['plan/index']) ?>" class="<?= $currentRoute === 'plan/index' ? 'active' : AppConst::EMPTY ?>">Planes</a></li>
-            <li><a href="#">Historial</a></li>
-            <li><a href="<?= Url::to(['settings/index']) ?>" class="<?= $currentRoute === 'settings/index' ? 'active' : AppConst::EMPTY ?>">Configuraciones</a></li>
+            <li><a href="<?= Url::to(['settings/index']) ?>" class="<?= $currentRoute === 'settings/index' ? 'active' : AppConst::EMPTY ?>">Configurar Perfil</a></li>
         </ul>
 
         <div class="user-profile">
