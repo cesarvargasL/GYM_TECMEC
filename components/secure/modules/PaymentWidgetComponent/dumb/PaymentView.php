@@ -21,7 +21,7 @@ use yii\helpers\Url;
                 <select id="client-select" class="form-control" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
                     <option value="">-- Seleccione un cliente --</option>
                     <?php foreach ($clients as $client): ?>
-                        <option value="<?= Html::encode($client->CI) ?>" data-name="<?= Html::encode($client->NOMBRE_COMPLETO)">
+                        <option value="<?= Html::encode($client->CI) ?>" data-name="<?= Html::encode($client->NOMBRE_COMPLETO) ?>">
                             <?= Html::encode($client->CI) ?> - <?= Html::encode($client->NOMBRE_COMPLETO) ?>
                         </option>
                     <?php endforeach; ?>
@@ -64,15 +64,15 @@ use yii\helpers\Url;
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const clientSelect = document.getElementById('client-select');
-    const planSelect = document.getElementById('plan-select');
-    const paymentSummary = document.getElementById('payment-summary');
-    const btnPayQr = document.getElementById('btn-pay-qr');
-    const btnPayCash = document.getElementById('btn-pay-cash');
+    var clientSelect = document.getElementById('client-select');
+    var planSelect = document.getElementById('plan-select');
+    var paymentSummary = document.getElementById('payment-summary');
+    var btnPayQr = document.getElementById('btn-pay-qr');
+    var btnPayCash = document.getElementById('btn-pay-cash');
 
     function updateSummary() {
-        const clientOption = clientSelect.options[clientSelect.selectedIndex];
-        const planOption = planSelect.options[planSelect.selectedIndex];
+        var clientOption = clientSelect.options[clientSelect.selectedIndex];
+        var planOption = planSelect.options[planSelect.selectedIndex];
 
         if (clientSelect.value && planSelect.value) {
             document.getElementById('summary-client').textContent = clientOption.dataset.name;
@@ -89,19 +89,19 @@ document.addEventListener('DOMContentLoaded', function() {
     planSelect.addEventListener('change', updateSummary);
 
     function processPayment(method) {
-        const clientCi = clientSelect.value;
-        const planId = planSelect.value;
+        var clientCi = clientSelect.value;
+        var planId = planSelect.value;
 
         if (!clientCi || !planId) {
             Swal.fire('Error', 'Seleccione cliente y plan', 'error');
             return;
         }
 
-        const btn = method === 'QR' ? btnPayQr : btnPayCash;
+        var btn = method === 'QR' ? btnPayQr : btnPayCash;
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Procesando...';
 
-        const url = method === 'QR' ? '<?= Url::to(["payment/process-qr"]) ?>' : '<?= Url::to(["payment/process-cash"]) ?>';
+        var url = method === 'QR' ? '<?= Url::to(["payment/process-qr"]) ?>' : '<?= Url::to(["payment/process-cash"]) ?>';
 
         fetch(url, {
             method: 'POST',
@@ -109,33 +109,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
-            body: `client_ci=${encodeURIComponent(clientCi)}&plan_id=${encodeURIComponent(planId)}`
+            body: 'client_ci=' + encodeURIComponent(clientCi) + '&plan_id=' + encodeURIComponent(planId)
         })
-        .then(res => res.json())
-        .then(data => {
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
             if (data.status === 'success') {
                 Swal.fire({
                     icon: 'success',
                     title: 'Pago Exitoso',
-                    html: `Membresia: <strong>${data.membership_code}</strong><br>Recibo: <strong>${data.payment_id}</strong>`,
+                    html: 'Membresia: <strong>' + data.membership_code + '</strong><br>Recibo: <strong>' + data.payment_id + '</strong>',
                     confirmButtonText: 'Ir al Historial'
-                }).then(() => {
+                }).then(function() {
                     window.location.href = '<?= Url::to(["history/index"]) ?>';
                 });
             } else {
                 Swal.fire('Error', data.message, 'error');
             }
         })
-        .catch(err => {
+        .catch(function() {
             Swal.fire('Error', 'Error de conexion', 'error');
         })
-        .finally(() => {
+        .finally(function() {
             btn.disabled = false;
             btn.innerHTML = method === 'QR' ? 'Pagar con QR' : 'Pago en Efectivo';
         });
     }
 
-    btnPayQr.addEventListener('click', () => processPayment('QR'));
-    btnPayCash.addEventListener('click', () => processPayment('EFECTIVO'));
+    btnPayQr.addEventListener('click', function() { processPayment('QR'); });
+    btnPayCash.addEventListener('click', function() { processPayment('EFECTIVO'); });
 });
 </script>

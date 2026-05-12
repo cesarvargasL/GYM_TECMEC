@@ -8,7 +8,7 @@ class Plan extends ActiveRecord
 {
     public static function tableName()
     {
-        return 'PLAN';
+        return 'plan';
     }
 
     public function rules()

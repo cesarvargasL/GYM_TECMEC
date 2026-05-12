@@ -3,13 +3,12 @@ namespace app\models;
 
 use Yii;
 use yii\db\ActiveRecord;
-use app\shared\enums\ClientStatus;
 
 class Membership extends ActiveRecord
 {
     public static function tableName()
     {
-        return 'MEMBRESIA';
+        return 'membresia';
     }
 
     public function rules()

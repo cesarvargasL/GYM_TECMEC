@@ -8,7 +8,7 @@ class Attendance extends ActiveRecord
 {
     public static function tableName()
     {
-        return 'ASISTENCIA';
+        return 'asistencia';
     }
 
     public function rules()

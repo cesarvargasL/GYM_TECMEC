@@ -8,7 +8,7 @@ class Payment extends ActiveRecord
 {
     public static function tableName()
     {
-        return 'PAGO';
+        return 'pago';
     }
 
     public function rules()
