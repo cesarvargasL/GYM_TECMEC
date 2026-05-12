@@ -3,6 +3,7 @@ namespace app\models;
 
 use Yii;
 use yii\db\ActiveRecord;
+use yii\web\IdentityInterface;
 use app\shared\enums\ClientStatus;
 
 class User extends ActiveRecord implements IdentityInterface

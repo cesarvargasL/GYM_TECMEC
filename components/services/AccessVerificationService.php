@@ -38,7 +38,7 @@ class AccessVerificationService
         $attendance = new Attendance();
         $attendance->CI_CLIENTE = $ci;
         $attendance->ID_BIOMETRICO = $idBiometrico;
-        $attendance->CODIGO_MEMBRESIA = $activeMembership->CODIGO_MEMBRESIA;
+        $attendance->CODIGO_MEMBRESIA = (int)$activeMembership->CODIGO_MEMBRESIA;
         $attendance->FECHA_DE_INGRESO = date('Y-m-d H:i:s');
 
         if (!$attendance->save(false)) {

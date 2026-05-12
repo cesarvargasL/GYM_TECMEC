@@ -19,7 +19,8 @@ class Payment extends ActiveRecord
             [['FECHA'], 'safe'],
             [['TIPO_PAGO'], 'in', 'range' => ['QR', 'EFECTIVO']],
             [['CODIGO_PAGO', 'NRO_DOCUMENTO'], 'string', 'max' => 100],
-            [['CODIGO_MEMBRESIA', 'CI_CLIENTE', 'CI_ADMINISTRADOR'], 'string', 'max' => 50],
+            [['CI_CLIENTE', 'CI_ADMINISTRADOR'], 'string', 'max' => 20],
+            [['CODIGO_MEMBRESIA'], 'integer'],
             [['ES_BORRADO'], 'boolean'],
         ];
     }

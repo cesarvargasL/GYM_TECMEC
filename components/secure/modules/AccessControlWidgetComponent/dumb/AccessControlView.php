@@ -70,16 +70,15 @@ use yii\helpers\Url;
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const manualCiInput = document.getElementById('manual-ci-input');
-    const btnManualSearch = document.getElementById('btn-manual-search');
-    const deviceStatus = document.getElementById('device-status');
+    var manualCiInput = document.getElementById('manual-ci-input');
+    var btnManualSearch = document.getElementById('btn-manual-search');
+    var deviceStatus = document.getElementById('device-status');
 
-    // SSE Connection for real-time access events
     function connectSSE() {
-        const eventSource = new EventSource('<?= Url::to(["access-control/stream"]) ?>');
+        var eventSource = new EventSource('<?= Url::to(["access-control/stream"]) ?>');
 
         eventSource.onmessage = function(event) {
-            const data = JSON.parse(event.data);
+            var data = JSON.parse(event.data);
             showAccessPopup(data);
         };
 
@@ -96,9 +95,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     connectSSE();
 
-    // Manual search
     btnManualSearch.addEventListener('click', function() {
-        const ci = manualCiInput.value.trim();
+        var ci = manualCiInput.value.trim();
         if (!ci) {
             Swal.fire('Error', 'Ingrese un CI valido', 'warning');
             return;
@@ -113,16 +111,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
-            body: `ci=${encodeURIComponent(ci)}`
+            body: 'ci=' + encodeURIComponent(ci)
         })
-        .then(res => res.json())
-        .then(data => {
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
             showManualResult(data);
         })
-        .catch(err => {
+        .catch(function() {
             Swal.fire('Error', 'Error de conexion', 'error');
         })
-        .finally(() => {
+        .finally(function() {
             btnManualSearch.disabled = false;
             btnManualSearch.innerHTML = 'Verificar';
         });
@@ -136,45 +134,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showAccessPopup(data) {
         if (data.status === 'granted') {
-            const avatarHtml = data.user.avatar
-                ? `<img src="${data.user.avatar}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #28a745; margin-bottom: 20px;">`
-                : `<div style="width: 120px; height: 120px; background: #28a745; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 50px; font-weight: bold; margin: 0 auto 20px;">${data.user.nombre.charAt(0)}</div>`;
+            var avatarHtml = data.user.avatar
+                ? '<img src="' + data.user.avatar + '" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #28a745; margin-bottom: 20px;">'
+                : '<div style="width: 120px; height: 120px; background: #28a745; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 50px; font-weight: bold; margin: 0 auto 20px;">' + data.user.nombre.charAt(0) + '</div>';
 
             Swal.fire({
-                html: `
-                    <div style="padding: 10px;">
-                        ${avatarHtml}
-                        <h2 style="color: #28a745; margin: 0;">ACCESO PERMITIDO</h2>
-                        <h3 style="color: #333; margin: 10px 0;">${data.user.nombre}</h3>
-                        <p style="color: #666;">CI: ${data.user.ci}</p>
-                        <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-top: 15px;">
-                            <strong>Dias restantes:</strong> ${data.remainingDays}
-                        </div>
-                    </div>
-                `,
+                html: '<div style="padding: 10px;">' + avatarHtml +
+                    '<h2 style="color: #28a745; margin: 0;">ACCESO PERMITIDO</h2>' +
+                    '<h3 style="color: #333; margin: 10px 0;">' + data.user.nombre + '</h3>' +
+                    '<p style="color: #666;">CI: ' + data.user.ci + '</p>' +
+                    '<div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-top: 15px;">' +
+                    '<strong>Dias restantes:</strong> ' + data.remainingDays + '</div></div>',
                 showConfirmButton: false,
                 timer: 5000,
                 width: '500px',
             });
         } else {
-            const avatarHtml = data.user && data.user.avatar
-                ? `<img src="${data.user.avatar}" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #dc3545; margin-bottom: 15px;">`
-                : `<div style="width: 100px; height: 100px; background: #dc3545; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: bold; margin: 0 auto 15px;">?</div>`;
+            var avatarHtml = data.user && data.user.avatar
+                ? '<img src="' + data.user.avatar + '" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #dc3545; margin-bottom: 15px;">'
+                : '<div style="width: 100px; height: 100px; background: #dc3545; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: bold; margin: 0 auto 15px;">?</div>';
 
             Swal.fire({
-                html: `
-                    <div style="padding: 10px;">
-                        ${avatarHtml}
-                        <h2 style="color: #dc3545; margin: 0;">ACCESO DENEGADO</h2>
-                        <p style="color: #666; margin: 15px 0;">${data.reason}</p>
-                        ${data.user ? `<p style="color: #333;">${data.user.nombre} (CI: ${data.user.ci})</p>` : ''}
-                    </div>
-                `,
+                html: '<div style="padding: 10px;">' + avatarHtml +
+                    '<h2 style="color: #dc3545; margin: 0;">ACCESO DENEGADO</h2>' +
+                    '<p style="color: #666; margin: 15px 0;">' + data.reason + '</p>' +
+                    (data.user ? '<p style="color: #333;">' + data.user.nombre + ' (CI: ' + data.user.ci + ')</p>' : '') +
+                    '</div>',
                 showCancelButton: true,
                 confirmButtonText: 'Ir a Pagos',
                 cancelButtonText: 'Cerrar',
                 confirmButtonColor: '#0056b3',
-            }).then((result) => {
+            }).then(function(result) {
                 if (result.isConfirmed) {
                     window.location.href = '<?= Url::to(["payment/index"]) ?>';
                 }
@@ -184,19 +174,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showManualResult(data) {
         if (data.status === 'granted') {
-            const avatarHtml = data.user.avatar
-                ? `<img src="${data.user.avatar}" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #28a745; margin-bottom: 15px;">`
-                : `<div style="width: 100px; height: 100px; background: #28a745; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: bold; margin: 0 auto 15px;">${data.user.nombre.charAt(0)}</div>`;
+            var avatarHtml = data.user.avatar
+                ? '<img src="' + data.user.avatar + '" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #28a745; margin-bottom: 15px;">'
+                : '<div style="width: 100px; height: 100px; background: #28a745; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: bold; margin: 0 auto 15px;">' + data.user.nombre.charAt(0) + '</div>';
 
             Swal.fire({
                 icon: 'success',
                 title: 'Acceso Permitido',
-                html: `
-                    ${avatarHtml}
-                    <strong>${data.user.nombre}</strong><br>
-                    CI: ${data.user.ci}<br>
-                    Dias restantes: ${data.remainingDays}
-                `,
+                html: avatarHtml + '<strong>' + data.user.nombre + '</strong><br>CI: ' + data.user.ci + '<br>Dias restantes: ' + data.remainingDays,
                 confirmButtonText: 'OK',
             });
         } else {

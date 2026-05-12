@@ -15,9 +15,9 @@ class Attendance extends ActiveRecord
     {
         return [
             [['CI_CLIENTE', 'ID_BIOMETRICO', 'CODIGO_MEMBRESIA'], 'required'],
-            [['ID_BIOMETRICO'], 'integer'],
+            [['ID_BIOMETRICO', 'CODIGO_MEMBRESIA'], 'integer'],
             [['FECHA_DE_INGRESO'], 'safe'],
-            [['CI_CLIENTE', 'CODIGO_MEMBRESIA'], 'string', 'max' => 50],
+            [['CI_CLIENTE'], 'string', 'max' => 20],
             [['ES_BORRADO'], 'boolean'],
         ];
     }

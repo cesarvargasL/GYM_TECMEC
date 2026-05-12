@@ -21,7 +21,6 @@ class MembershipService
         $endDate = date('Y-m-d', strtotime("+{$daysCount} days"));
 
         $membership = new Membership();
-        $membership->CODIGO_MEMBRESIA = $this->generateMembershipCode();
         $membership->CI_CLIENTE = $clientCi;
         $membership->ID_PLAN = $planId;
         $membership->FECHA_INICIO = $startDate;
@@ -34,14 +33,6 @@ class MembershipService
         }
 
         return $membership;
-    }
-
-    public function generateMembershipCode(): string
-    {
-        $prefix = 'MEM';
-        $timestamp = strtoupper(substr(dechex(time()), -6));
-        $random = strtoupper(substr(bin2hex(random_bytes(2)), 0, 4));
-        return $prefix . $timestamp . $random;
     }
 
     public function decrementAvailableDays(Membership $membership): bool
@@ -68,7 +59,7 @@ class MembershipService
             ->all();
     }
 
-    public function getAllAttendanceDatesForClient(string $clientCi, string $membershipCode): array
+    public function getAllAttendanceDatesForClient(string $clientCi, int $membershipCode): array
     {
         $attendances = \app\models\Attendance::find()
             ->where([

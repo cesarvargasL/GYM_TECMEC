@@ -43,7 +43,7 @@ class DashboardController extends Controller
                 $membershipService = new \app\components\services\MembershipService();
                 $attendanceDates = $membershipService->getAllAttendanceDatesForClient(
                     $user->CI,
-                    $activeMembership->CODIGO_MEMBRESIA
+                    (int)$activeMembership->CODIGO_MEMBRESIA
                 );
             }
         }

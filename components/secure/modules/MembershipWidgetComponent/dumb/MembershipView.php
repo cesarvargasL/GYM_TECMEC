@@ -11,7 +11,7 @@ use yii\widgets\LinkPager;
         </h2>
 
         <form id="filter-form" method="GET" action="<?= Url::to(['membership/index']) ?>" style="display: flex; gap: 15px; margin-bottom: 20px;">
-            <input type="text" name="search" value="<?= Html::encode($search) ?>" placeholder="Buscar por nombre, CI o codigo..." style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; flex-grow: 1;">
+            <input type="text" name="search" value="<?= Html::encode($search) ?>" placeholder="Buscar por nombre o CI..." style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; flex-grow: 1;">
             <button type="submit" class="btn btn-primary" style="border-radius: 5px;">Buscar</button>
             <a href="<?= Url::to(['membership/index']) ?>" class="btn btn-light" style="border-radius: 5px;">Limpiar</a>
         </form>
@@ -20,7 +20,7 @@ use yii\widgets\LinkPager;
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                        <th style="padding: 12px; text-align: left;">Codigo</th>
+                        <th style="padding: 12px; text-align: left;">ID</th>
                         <th style="padding: 12px; text-align: left;">Cliente</th>
                         <th style="padding: 12px; text-align: left;">Plan</th>
                         <th style="padding: 12px; text-align: left;">Inicio</th>
@@ -37,7 +37,7 @@ use yii\widgets\LinkPager;
                     <?php else: ?>
                         <?php foreach ($memberships as $m): ?>
                             <tr style="border-bottom: 1px solid #e9ecef;">
-                                <td style="padding: 12px; font-family: monospace;"><?= Html::encode($m->CODIGO_MEMBRESIA) ?></td>
+                                <td style="padding: 12px; font-family: monospace;"><?= (int)$m->CODIGO_MEMBRESIA ?></td>
                                 <td style="padding: 12px;">
                                     <?php if ($m->client): ?>
                                         <div>

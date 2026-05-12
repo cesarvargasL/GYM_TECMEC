@@ -119,10 +119,10 @@ $isClient = $user->isClient();
         </div>
 
         <script>
-            document.querySelectorAll('.client-tab').forEach(tab => {
+            document.querySelectorAll('.client-tab').forEach(function(tab) {
                 tab.addEventListener('click', function() {
-                    document.querySelectorAll('.client-tab').forEach(t => t.classList.remove('active'));
-                    document.querySelectorAll('.client-tab-content').forEach(c => c.classList.remove('active'));
+                    document.querySelectorAll('.client-tab').forEach(function(t) { t.classList.remove('active'); });
+                    document.querySelectorAll('.client-tab-content').forEach(function(c) { c.classList.remove('active'); });
                     this.classList.add('active');
                     document.getElementById(this.dataset.tab).classList.add('active');
                 });
@@ -137,7 +137,7 @@ $isClient = $user->isClient();
                     confirmButtonText: 'Confirmar',
                     cancelButtonText: 'Cancelar',
                     confirmButtonColor: '#28a745',
-                }).then((result) => {
+                }).then(function(result) {
                     if (result.isConfirmed) {
                         fetch('<?= Url::to(["payment/client-self-renew"]) ?>', {
                             method: 'POST',
@@ -145,13 +145,13 @@ $isClient = $user->isClient();
                                 'Content-Type': 'application/x-www-form-urlencoded',
                                 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                             },
-                            body: `plan_id=${planId}`
+                            body: 'plan_id=' + planId
                         })
-                        .then(res => res.json())
-                        .then(data => {
+                        .then(function(res) { return res.json(); })
+                        .then(function(data) {
                             if (data.status === 'success') {
-                                Swal.fire('Exitoso', 'Membresia renovada: ' + data.membership_code, 'success')
-                                    .then(() => location.reload());
+                                Swal.fire('Exitoso', 'Membresia renovada: #' + data.membership_code, 'success')
+                                    .then(function() { location.reload(); });
                             } else {
                                 Swal.fire('Error', data.message, 'error');
                             }

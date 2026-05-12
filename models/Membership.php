@@ -14,13 +14,11 @@ class Membership extends ActiveRecord
     public function rules()
     {
         return [
-            [['CODIGO_MEMBRESIA', 'CI_CLIENTE', 'ID_PLAN', 'FECHA_INICIO', 'FECHA_FIN', 'DIAS_ASIGNADOS', 'DIAS_DISPONIBLES'], 'required'],
+            [['CI_CLIENTE', 'ID_PLAN', 'FECHA_INICIO', 'FECHA_FIN', 'DIAS_ASIGNADOS', 'DIAS_DISPONIBLES'], 'required'],
             [['DIAS_ASIGNADOS', 'DIAS_DISPONIBLES'], 'integer'],
             [['FECHA_INICIO', 'FECHA_FIN'], 'date'],
             [['ES_BORRADO'], 'boolean'],
-            [['CODIGO_MEMBRESIA'], 'string', 'max' => 50],
             [['CI_CLIENTE'], 'string', 'max' => 20],
-            [['CODIGO_MEMBRESIA'], 'unique'],
         ];
     }
 

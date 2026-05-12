@@ -22,7 +22,6 @@ class MembershipContainer extends Widget
             $query->andWhere(['or',
                 ['like', 'c.NOMBRE_COMPLETO', $search],
                 ['like', 'm.CI_CLIENTE', $search],
-                ['like', 'm.CODIGO_MEMBRESIA', $search],
             ]);
         }
 
