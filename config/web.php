@@ -69,6 +69,7 @@ $config = [
                 'access-control/poll-events' => 'access-control/poll-events',
                 'access-control/simulate-access' => 'access-control/simulate-access',
                 'access-control/manual-search' => 'access-control/manual-search',
+                'access-control/debug-membership' => 'access-control/debug-membership',
                 'history' => 'history/index',
                 'payment' => 'payment/index',
                 'membership' => 'membership/index',

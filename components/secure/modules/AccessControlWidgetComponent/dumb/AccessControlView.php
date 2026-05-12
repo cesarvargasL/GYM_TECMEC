@@ -23,9 +23,12 @@ use yii\helpers\Url;
                 <div id="device-status" style="padding: 10px; border-radius: 5px; background: #e9ecef; display: inline-block;">
                     <span style="color: #666;">Verificando...</span>
                 </div>
-                <div style="margin-top: 10px;">
+                <div style="margin-top: 10px; display: flex; gap: 10px; justify-content: center;">
                     <button type="button" id="btn-simulate" class="btn btn-warning btn-sm" style="border-radius: 15px; font-weight: bold;">
-                        Simular Acceso Biometrico
+                        Simular Acceso
+                    </button>
+                    <button type="button" id="btn-debug" class="btn btn-info btn-sm" style="border-radius: 15px; font-weight: bold;">
+                        Debug Membresia
                     </button>
                 </div>
             </div>
@@ -78,11 +81,11 @@ document.addEventListener('DOMContentLoaded', function() {
     var manualCiInput = document.getElementById('manual-ci-input');
     var btnManualSearch = document.getElementById('btn-manual-search');
     var btnSimulate = document.getElementById('btn-simulate');
+    var btnDebug = document.getElementById('btn-debug');
     var deviceStatus = document.getElementById('device-status');
     var lastEventId = '0';
     var pollInterval = null;
 
-    // Polling instead of SSE (works with PHP built-in server)
     function startPolling() {
         checkDeviceStatus();
 
@@ -102,9 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         refreshAttendances();
                     }
                 })
-                .catch(function() {
-                    // Silently fail, will retry on next interval
-                });
+                .catch(function() {});
         }, 3000);
     }
 
@@ -124,12 +125,15 @@ document.addEventListener('DOMContentLoaded', function() {
             deviceStatus.innerHTML = '<span style="color: #28a745;">Dispositivo conectado</span>';
             deviceStatus.style.background = '#d4edda';
         } else {
-            deviceStatus.innerHTML = '<span style="color: #dc3545;">Dispositivo no disponible (modo simulacion)</span>';
-            deviceStatus.style.background = '#f8d7da';
+            deviceStatus.innerHTML = '<span style="color: #dc3545;">Modo simulacion (Flask no conectado)</span>';
+            deviceStatus.style.background = '#fff3cd';
         }
     }
 
     function refreshAttendances() {
+        var tbody = document.getElementById('recent-attendances-body');
+        if (!tbody) return;
+
         fetch('<?= Url::to(["access-control/index"]) ?>')
             .then(function(res) { return res.text(); })
             .then(function(html) {
@@ -137,23 +141,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 var doc = parser.parseFromString(html, 'text/html');
                 var newBody = doc.getElementById('recent-attendances-body');
                 if (newBody) {
-                    document.getElementById('recent-attendances-body').innerHTML = newBody.innerHTML;
+                    tbody.innerHTML = newBody.innerHTML;
                 }
             })
             .catch(function() {});
     }
 
-    // Manual search
-    btnManualSearch.addEventListener('click', function() {
-        var ci = manualCiInput.value.trim();
-        if (!ci) {
-            Swal.fire('Error', 'Ingrese un CI valido', 'warning');
-            return;
-        }
-
-        btnManualSearch.disabled = true;
-        btnManualSearch.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Verificando...';
-
+    function processAccess(ci) {
         fetch('<?= Url::to(["access-control/manual-search"]) ?>', {
             method: 'POST',
             headers: {
@@ -164,15 +158,31 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(function(res) { return res.json(); })
         .then(function(data) {
-            showManualResult(data);
+            if (data.status === 'error') {
+                Swal.fire('Error', data.message, 'error');
+            } else {
+                showAccessPopup(data);
+                refreshAttendances();
+            }
         })
         .catch(function() {
             Swal.fire('Error', 'Error de conexion', 'error');
-        })
-        .finally(function() {
-            btnManualSearch.disabled = false;
-            btnManualSearch.innerHTML = 'Verificar';
         });
+    }
+
+    btnManualSearch.addEventListener('click', function() {
+        var ci = manualCiInput.value.trim();
+        if (!ci) {
+            Swal.fire('Error', 'Ingrese un CI valido', 'warning');
+            return;
+        }
+        btnManualSearch.disabled = true;
+        btnManualSearch.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Verificando...';
+
+        processAccess(ci);
+
+        btnManualSearch.disabled = false;
+        btnManualSearch.innerHTML = 'Verificar';
     });
 
     manualCiInput.addEventListener('keypress', function(e) {
@@ -181,7 +191,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Simulate biometric access
     btnSimulate.addEventListener('click', function() {
         var ci = manualCiInput.value.trim();
         if (!ci) {
@@ -196,39 +205,64 @@ document.addEventListener('DOMContentLoaded', function() {
                 confirmButtonColor: '#ffc107',
             }).then(function(result) {
                 if (result.isConfirmed && result.value) {
-                    simulateAccess(result.value);
+                    processAccess(result.value);
                 }
             });
         } else {
-            simulateAccess(ci);
+            processAccess(ci);
         }
     });
 
-    function simulateAccess(ci) {
-        btnSimulate.disabled = true;
-        btnSimulate.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Simulando...';
+    btnDebug.addEventListener('click', function() {
+        var ci = manualCiInput.value.trim();
+        if (!ci) {
+            Swal.fire('Error', 'Ingrese un CI para debug', 'warning');
+            return;
+        }
 
-        fetch('<?= Url::to(["access-control/simulate-access"]) ?>', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: 'ci=' + encodeURIComponent(ci)
-        })
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
-            showAccessPopup(data);
-            refreshAttendances();
-        })
-        .catch(function() {
-            Swal.fire('Error', 'Error de simulacion', 'error');
-        })
-        .finally(function() {
-            btnSimulate.disabled = false;
-            btnSimulate.innerHTML = 'Simular Acceso Biometrico';
-        });
-    }
+        fetch('<?= Url::to(["access-control/debug-membership"]) ?>?ci=' + encodeURIComponent(ci))
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                var html = '<div style="text-align: left; font-size: 14px;">';
+                html += '<p><strong>Usuario:</strong> ' + (data.user_found ? data.user.nombre + ' (CI: ' + data.user.ci + ', Rol: ' + data.user.rol + ')' : 'No encontrado') + '</p>';
+                html += '<p><strong>Fecha actual:</strong> ' + data.today + '</p>';
+
+                if (data.active_membership) {
+                    html += '<div style="background: #d4edda; padding: 10px; border-radius: 5px; margin: 10px 0;">';
+                    html += '<strong style="color: #28a745;">Membresia Activa</strong><br>';
+                    html += 'Codigo: ' + data.active_membership.codigo + '<br>';
+                    html += 'Inicio: ' + data.active_membership.fecha_inicio + '<br>';
+                    html += 'Fin: ' + data.active_membership.fecha_fin + '<br>';
+                    html += 'Dias disponibles: ' + data.active_membership.dias_disponibles + '<br>';
+                    html += 'Eliminada: ' + (data.active_membership.es_borrado ? 'Si' : 'No');
+                    html += '</div>';
+                } else {
+                    html += '<div style="background: #f8d7da; padding: 10px; border-radius: 5px; margin: 10px 0;">';
+                    html += '<strong style="color: #dc3545;">Sin membresia activa</strong>';
+                    html += '</div>';
+                }
+
+                if (data.all_memberships && data.all_memberships.length > 0) {
+                    html += '<p><strong>Todas las membresias:</strong></p><ul>';
+                    data.all_memberships.forEach(function(m) {
+                        html += '<li>Codigo: ' + m.codigo + ' | ' + m.fecha_inicio + ' a ' + m.fecha_fin + ' | Dias: ' + m.dias_disponibles + ' | Activa: ' + (m.is_active ? 'Si' : 'No') + '</li>';
+                    });
+                    html += '</ul>';
+                }
+
+                html += '</div>';
+
+                Swal.fire({
+                    title: 'Debug Membresia - CI: ' + ci,
+                    html: html,
+                    width: '600px',
+                    confirmButtonText: 'Cerrar',
+                });
+            })
+            .catch(function() {
+                Swal.fire('Error', 'Error al obtener debug', 'error');
+            });
+    });
 
     function showAccessPopup(data) {
         if (data.status === 'granted') {
@@ -247,7 +281,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 timer: 5000,
                 width: '500px',
             });
-        } else {
+        } else if (data.status === 'denied') {
             var avatarHtml = data.user && data.user.avatar
                 ? '<img src="' + data.user.avatar + '" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #dc3545; margin-bottom: 15px;">'
                 : '<div style="width: 100px; height: 100px; background: #dc3545; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: bold; margin: 0 auto 15px;">?</div>';
@@ -255,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function() {
             Swal.fire({
                 html: '<div style="padding: 10px;">' + avatarHtml +
                     '<h2 style="color: #dc3545; margin: 0;">ACCESO DENEGADO</h2>' +
-                    '<p style="color: #666; margin: 15px 0;">' + data.reason + '</p>' +
+                    '<p style="color: #666; margin: 15px 0;">' + (data.reason || 'Motivo desconocido') + '</p>' +
                     (data.user ? '<p style="color: #333;">' + data.user.nombre + ' (CI: ' + data.user.ci + ')</p>' : '') +
                     '</div>',
                 showCancelButton: true,
@@ -267,35 +301,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.location.href = '<?= Url::to(["payment/index"]) ?>';
                 }
             });
+        } else if (data.status === 'error') {
+            Swal.fire('Error', data.reason || 'Error interno', 'error');
         }
     }
 
-    function showManualResult(data) {
-        if (data.status === 'granted') {
-            var avatarHtml = data.user.avatar
-                ? '<img src="' + data.user.avatar + '" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #28a745; margin-bottom: 15px;">'
-                : '<div style="width: 100px; height: 100px; background: #28a745; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: bold; margin: 0 auto 15px;">' + data.user.nombre.charAt(0) + '</div>';
-
-            Swal.fire({
-                icon: 'success',
-                title: 'Acceso Permitido',
-                html: avatarHtml + '<strong>' + data.user.nombre + '</strong><br>CI: ' + data.user.ci + '<br>Dias restantes: ' + data.remainingDays,
-                confirmButtonText: 'OK',
-            });
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Acceso Denegado',
-                text: data.reason,
-                confirmButtonText: 'OK',
-            });
-        }
-    }
-
-    // Start polling
     startPolling();
 
-    // Stop polling when leaving page
     window.addEventListener('beforeunload', function() {
         if (pollInterval) {
             clearInterval(pollInterval);

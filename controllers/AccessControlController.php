@@ -9,6 +9,8 @@ use yii\filters\AccessControl;
 use yii\web\Response;
 use app\shared\enums\Roles;
 use app\components\services\AccessVerificationService;
+use app\models\User;
+use app\models\Membership;
 
 class AccessControlController extends Controller
 {
@@ -79,7 +81,7 @@ class AccessControlController extends Controller
 
         $this->pushEvent($result);
 
-        return $result;
+        return $this->formatAccessResponse($result);
     }
 
     public function actionManualSearch(): Response
@@ -93,31 +95,11 @@ class AccessControlController extends Controller
         }
 
         $accessService = new AccessVerificationService();
-        $result = $accessService->verifyAccessManual($ci);
+        $result = $accessService->verifyAccess($ci, 0);
 
         $this->pushEvent($result);
 
-        if ($result['status'] === 'granted') {
-            return [
-                'status' => 'granted',
-                'user' => [
-                    'ci' => $result['user']->CI,
-                    'nombre' => $result['user']->NOMBRE_COMPLETO,
-                    'avatar' => $result['user']->AVATAR,
-                ],
-                'remainingDays' => $result['remainingDays'] ?? 0,
-            ];
-        }
-
-        return [
-            'status' => $result['status'],
-            'reason' => $result['reason'],
-            'user' => $result['user'] ? [
-                'ci' => $result['user']->CI,
-                'nombre' => $result['user']->NOMBRE_COMPLETO,
-                'avatar' => $result['user']->AVATAR,
-            ] : null,
-        ];
+        return $this->formatAccessResponse($result);
     }
 
     public function actionVerifyAccess(): Response
@@ -144,7 +126,92 @@ class AccessControlController extends Controller
             Yii::$app->response->statusCode = 500;
         }
 
-        return $result;
+        return $this->formatAccessResponse($result);
+    }
+
+    public function actionDebugMembership(): Response
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $ci = Yii::$app->request->get('ci');
+        if (empty($ci)) {
+            Yii::$app->response->statusCode = 400;
+            return ['error' => 'CI requerido'];
+        }
+
+        $user = User::findOne(['CI' => $ci, 'ES_BORRADO' => 0]);
+        if (!$user) {
+            return ['user_found' => false, 'message' => 'Usuario no encontrado'];
+        }
+
+        $memberships = Membership::find()
+            ->where(['CI_CLIENTE' => $ci])
+            ->orderBy(['FECHA_INICIO' => SORT_DESC])
+            ->all();
+
+        $today = date('Y-m-d');
+        $activeMembership = null;
+
+        foreach ($memberships as $m) {
+            $isActive = ($m->FECHA_INICIO <= $today && $m->FECHA_FIN >= $today && !$m->ES_BORRADO);
+            if ($isActive && !$activeMembership) {
+                $activeMembership = $m;
+            }
+        }
+
+        return [
+            'user_found' => true,
+            'user' => [
+                'ci' => $user->CI,
+                'nombre' => $user->NOMBRE_COMPLETO,
+                'rol' => $user->ROL,
+            ],
+            'today' => $today,
+            'active_membership' => $activeMembership ? [
+                'codigo' => $activeMembership->CODIGO_MEMBRESIA,
+                'fecha_inicio' => $activeMembership->FECHA_INICIO,
+                'fecha_fin' => $activeMembership->FECHA_FIN,
+                'dias_disponibles' => $activeMembership->DIAS_DISPONIBLES,
+                'es_borrado' => $activeMembership->ES_BORRADO,
+            ] : null,
+            'all_memberships' => array_map(function($m) use ($today) {
+                return [
+                    'codigo' => $m->CODIGO_MEMBRESIA,
+                    'fecha_inicio' => $m->FECHA_INICIO,
+                    'fecha_fin' => $m->FECHA_FIN,
+                    'dias_disponibles' => $m->DIAS_DISPONIBLES,
+                    'es_borrado' => $m->ES_BORRADO,
+                    'is_active' => ($m->FECHA_INICIO <= $today && $m->FECHA_FIN >= $today && !$m->ES_BORRADO),
+                ];
+            }, $memberships),
+        ];
+    }
+
+    private function formatAccessResponse(array $result): array
+    {
+        if ($result['status'] === 'granted') {
+            return [
+                'status' => 'granted',
+                'reason' => $result['reason'] ?? 'Acceso permitido',
+                'user' => [
+                    'ci' => $result['user']->CI,
+                    'nombre' => $result['user']->NOMBRE_COMPLETO,
+                    'avatar' => $result['user']->AVATAR,
+                ],
+                'remainingDays' => $result['remainingDays'] ?? 0,
+            ];
+        }
+
+        return [
+            'status' => $result['status'],
+            'reason' => $result['reason'] ?? 'Acceso denegado',
+            'user' => isset($result['user']) && $result['user'] ? [
+                'ci' => $result['user']->CI,
+                'nombre' => $result['user']->NOMBRE_COMPLETO,
+                'avatar' => $result['user']->AVATAR,
+            ] : null,
+            'remainingDays' => 0,
+        ];
     }
 
     private function pushEvent(array $result): void
@@ -157,10 +224,12 @@ class AccessControlController extends Controller
             $events = json_decode($content, true) ?: [];
         }
 
+        $formattedData = $this->formatAccessResponse($result);
+
         $newEvent = [
             'id' => uniqid(),
             'timestamp' => date('Y-m-d H:i:s'),
-            'data' => $result,
+            'data' => $formattedData,
         ];
 
         array_unshift($events, $newEvent);
