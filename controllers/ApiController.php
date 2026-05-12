@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 namespace app\controllers;
 
@@ -34,7 +33,7 @@ class ApiController extends Controller
         return parent::beforeAction($action);
     }
 
-    public function actionEnrollCallback(): Response
+    public function actionEnrollCallback()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
@@ -57,7 +56,7 @@ class ApiController extends Controller
         return ['status' => 'error', 'message' => 'Failed to update user fingerprint status'];
     }
 
-    public function actionVerifyAccess(): Response
+    public function actionVerifyAccess()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
@@ -82,7 +81,7 @@ class ApiController extends Controller
         return $result;
     }
 
-    public function actionGetUsers(): Response
+    public function actionGetUsers()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 

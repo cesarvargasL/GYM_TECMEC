@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 namespace app\controllers;
 
@@ -39,7 +38,7 @@ class AccessControlController extends Controller
         return $this->render('//modules/access-control/index');
     }
 
-    public function actionPollEvents(): Response
+    public function actionPollEvents()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
@@ -66,7 +65,7 @@ class AccessControlController extends Controller
         ];
     }
 
-    public function actionSimulateAccess(): Response
+    public function actionSimulateAccess()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
@@ -84,7 +83,7 @@ class AccessControlController extends Controller
         return $this->formatAccessResponse($result);
     }
 
-    public function actionManualSearch(): Response
+    public function actionManualSearch()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
@@ -102,7 +101,7 @@ class AccessControlController extends Controller
         return $this->formatAccessResponse($result);
     }
 
-    public function actionVerifyAccess(): Response
+    public function actionVerifyAccess()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
@@ -129,7 +128,7 @@ class AccessControlController extends Controller
         return $this->formatAccessResponse($result);
     }
 
-    public function actionDebugMembership(): Response
+    public function actionDebugMembership()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
