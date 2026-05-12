@@ -9,8 +9,8 @@ use yii\helpers\Url;
             Control de Entrada
         </h2>
 
-        <div style="display: flex; gap: 20px; margin-bottom: 30px;">
-            <div style="flex: 1;">
+        <div style="display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 250px;">
                 <h4 style="color: #0056b3; margin-bottom: 10px;">Busqueda Manual por CI</h4>
                 <div style="display: flex; gap: 10px;">
                     <input type="text" id="manual-ci-input" placeholder="Ingrese CI del cliente..." style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; flex-grow: 1;">
@@ -18,10 +18,15 @@ use yii\helpers\Url;
                 </div>
             </div>
 
-            <div style="flex: 1; text-align: center;">
+            <div style="flex: 1; min-width: 250px; text-align: center;">
                 <h4 style="color: #0056b3; margin-bottom: 10px;">Estado del Dispositivo</h4>
                 <div id="device-status" style="padding: 10px; border-radius: 5px; background: #e9ecef; display: inline-block;">
-                    <span style="color: #666;">Esperando conexion...</span>
+                    <span style="color: #666;">Verificando...</span>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button type="button" id="btn-simulate" class="btn btn-warning btn-sm" style="border-radius: 15px; font-weight: bold;">
+                        Simular Acceso Biometrico
+                    </button>
                 </div>
             </div>
         </div>
@@ -38,7 +43,7 @@ use yii\helpers\Url;
                             <th style="padding: 12px; text-align: center;">Estado</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="recent-attendances-body">
                         <?php if (empty($recentAttendances)): ?>
                             <tr>
                                 <td colspan="4" style="text-align: center; padding: 30px; color: #666;">No hay registros recientes</td>
@@ -72,29 +77,73 @@ use yii\helpers\Url;
 document.addEventListener('DOMContentLoaded', function() {
     var manualCiInput = document.getElementById('manual-ci-input');
     var btnManualSearch = document.getElementById('btn-manual-search');
+    var btnSimulate = document.getElementById('btn-simulate');
     var deviceStatus = document.getElementById('device-status');
+    var lastEventId = '0';
+    var pollInterval = null;
 
-    function connectSSE() {
-        var eventSource = new EventSource('<?= Url::to(["access-control/stream"]) ?>');
+    // Polling instead of SSE (works with PHP built-in server)
+    function startPolling() {
+        checkDeviceStatus();
 
-        eventSource.onmessage = function(event) {
-            var data = JSON.parse(event.data);
-            showAccessPopup(data);
-        };
+        pollInterval = setInterval(function() {
+            fetch('<?= Url::to(["access-control/poll-events"]) ?>?lastId=' + lastEventId)
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.deviceOnline !== undefined) {
+                        updateDeviceStatus(data.deviceOnline);
+                    }
 
-        eventSource.onerror = function() {
-            deviceStatus.innerHTML = '<span style="color: #dc3545;">Desconectado - Reintentando...</span>';
-            eventSource.close();
-            setTimeout(connectSSE, 5000);
-        };
-
-        eventSource.onopen = function() {
-            deviceStatus.innerHTML = '<span style="color: #28a745;">Conectado al dispositivo</span>';
-        };
+                    if (data.events && data.events.length > 0) {
+                        data.events.forEach(function(event) {
+                            showAccessPopup(event.data);
+                            lastEventId = event.id;
+                        });
+                        refreshAttendances();
+                    }
+                })
+                .catch(function() {
+                    // Silently fail, will retry on next interval
+                });
+        }, 3000);
     }
 
-    connectSSE();
+    function checkDeviceStatus() {
+        fetch('<?= Url::to(["access-control/poll-events"]) ?>')
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                updateDeviceStatus(data.deviceOnline);
+            })
+            .catch(function() {
+                updateDeviceStatus(false);
+            });
+    }
 
+    function updateDeviceStatus(online) {
+        if (online) {
+            deviceStatus.innerHTML = '<span style="color: #28a745;">Dispositivo conectado</span>';
+            deviceStatus.style.background = '#d4edda';
+        } else {
+            deviceStatus.innerHTML = '<span style="color: #dc3545;">Dispositivo no disponible (modo simulacion)</span>';
+            deviceStatus.style.background = '#f8d7da';
+        }
+    }
+
+    function refreshAttendances() {
+        fetch('<?= Url::to(["access-control/index"]) ?>')
+            .then(function(res) { return res.text(); })
+            .then(function(html) {
+                var parser = new DOMParser();
+                var doc = parser.parseFromString(html, 'text/html');
+                var newBody = doc.getElementById('recent-attendances-body');
+                if (newBody) {
+                    document.getElementById('recent-attendances-body').innerHTML = newBody.innerHTML;
+                }
+            })
+            .catch(function() {});
+    }
+
+    // Manual search
     btnManualSearch.addEventListener('click', function() {
         var ci = manualCiInput.value.trim();
         if (!ci) {
@@ -132,19 +181,68 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Simulate biometric access
+    btnSimulate.addEventListener('click', function() {
+        var ci = manualCiInput.value.trim();
+        if (!ci) {
+            Swal.fire({
+                title: 'Simular Acceso Biometrico',
+                input: 'text',
+                inputLabel: 'Ingrese CI del cliente para simular',
+                inputPlaceholder: 'Ej: 13722192',
+                showCancelButton: true,
+                confirmButtonText: 'Simular',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#ffc107',
+            }).then(function(result) {
+                if (result.isConfirmed && result.value) {
+                    simulateAccess(result.value);
+                }
+            });
+        } else {
+            simulateAccess(ci);
+        }
+    });
+
+    function simulateAccess(ci) {
+        btnSimulate.disabled = true;
+        btnSimulate.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Simulando...';
+
+        fetch('<?= Url::to(["access-control/simulate-access"]) ?>', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: 'ci=' + encodeURIComponent(ci)
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            showAccessPopup(data);
+            refreshAttendances();
+        })
+        .catch(function() {
+            Swal.fire('Error', 'Error de simulacion', 'error');
+        })
+        .finally(function() {
+            btnSimulate.disabled = false;
+            btnSimulate.innerHTML = 'Simular Acceso Biometrico';
+        });
+    }
+
     function showAccessPopup(data) {
         if (data.status === 'granted') {
-            var avatarHtml = data.user.avatar
+            var avatarHtml = data.user && data.user.avatar
                 ? '<img src="' + data.user.avatar + '" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #28a745; margin-bottom: 20px;">'
-                : '<div style="width: 120px; height: 120px; background: #28a745; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 50px; font-weight: bold; margin: 0 auto 20px;">' + data.user.nombre.charAt(0) + '</div>';
+                : '<div style="width: 120px; height: 120px; background: #28a745; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 50px; font-weight: bold; margin: 0 auto 20px;">' + (data.user ? data.user.nombre.charAt(0) : '?') + '</div>';
 
             Swal.fire({
                 html: '<div style="padding: 10px;">' + avatarHtml +
                     '<h2 style="color: #28a745; margin: 0;">ACCESO PERMITIDO</h2>' +
-                    '<h3 style="color: #333; margin: 10px 0;">' + data.user.nombre + '</h3>' +
-                    '<p style="color: #666;">CI: ' + data.user.ci + '</p>' +
+                    '<h3 style="color: #333; margin: 10px 0;">' + (data.user ? data.user.nombre : '') + '</h3>' +
+                    '<p style="color: #666;">CI: ' + (data.user ? data.user.ci : '') + '</p>' +
                     '<div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-top: 15px;">' +
-                    '<strong>Dias restantes:</strong> ' + data.remainingDays + '</div></div>',
+                    '<strong>Dias restantes:</strong> ' + (data.remainingDays || 0) + '</div></div>',
                 showConfirmButton: false,
                 timer: 5000,
                 width: '500px',
@@ -193,5 +291,15 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
+
+    // Start polling
+    startPolling();
+
+    // Stop polling when leaving page
+    window.addEventListener('beforeunload', function() {
+        if (pollInterval) {
+            clearInterval(pollInterval);
+        }
+    });
 });
 </script>

@@ -37,43 +37,49 @@ class AccessControlController extends Controller
         return $this->render('//modules/access-control/index');
     }
 
-    public function actionStream(): Response
+    public function actionPollEvents(): Response
     {
-        Yii::$app->response->format = Response::FORMAT_RAW;
-        $response = Yii::$app->response;
-        $response->headers->set('Content-Type', 'text/event-stream');
-        $response->headers->set('Cache-Control', 'no-cache');
-        $response->headers->set('Connection', 'keep-alive');
-        $response->headers->set('X-Accel-Buffering', 'no');
+        Yii::$app->response->format = Response::FORMAT_JSON;
 
         $filePath = Yii::getAlias('@runtime/access_events.json');
+        $lastId = Yii::$app->request->get('lastId', '0');
 
-        $lastEventId = Yii::$app->request->get('lastEventId', '0');
-
-        while (true) {
-            if (connection_aborted()) {
-                break;
-            }
-
-            if (file_exists($filePath)) {
-                $content = file_get_contents($filePath);
-                $events = json_decode($content, true) ?: [];
-
-                foreach ($events as $event) {
-                    if ((string)$event['id'] > (string)$lastEventId) {
-                        echo "id: {$event['id']}\n";
-                        echo "data: " . json_encode($event['data']) . "\n\n";
-                        ob_flush();
-                        flush();
-                        $lastEventId = (string)$event['id'];
-                    }
-                }
-            }
-
-            sleep(2);
+        if (!file_exists($filePath)) {
+            return ['events' => [], 'deviceOnline' => false];
         }
 
-        return $response;
+        $content = file_get_contents($filePath);
+        $events = json_decode($content, true) ?: [];
+
+        $newEvents = [];
+        foreach ($events as $event) {
+            if ((string)$event['id'] > (string)$lastId) {
+                $newEvents[] = $event;
+            }
+        }
+
+        return [
+            'events' => $newEvents,
+            'deviceOnline' => $this->isDeviceOnline(),
+        ];
+    }
+
+    public function actionSimulateAccess(): Response
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $ci = Yii::$app->request->post('ci');
+        if (empty($ci)) {
+            Yii::$app->response->statusCode = 400;
+            return ['status' => 'error', 'message' => 'CI requerido'];
+        }
+
+        $accessService = new AccessVerificationService();
+        $result = $accessService->verifyAccess($ci, (int)$ci);
+
+        $this->pushEvent($result);
+
+        return $result;
     }
 
     public function actionManualSearch(): Response
@@ -88,6 +94,8 @@ class AccessControlController extends Controller
 
         $accessService = new AccessVerificationService();
         $result = $accessService->verifyAccessManual($ci);
+
+        $this->pushEvent($result);
 
         if ($result['status'] === 'granted') {
             return [
@@ -110,5 +118,67 @@ class AccessControlController extends Controller
                 'avatar' => $result['user']->AVATAR,
             ] : null,
         ];
+    }
+
+    public function actionVerifyAccess(): Response
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $rawBody = Yii::$app->request->getRawBody();
+        $data = json_decode($rawBody, true);
+
+        if (!$data || !isset($data['usuario_id'])) {
+            Yii::$app->response->statusCode = 400;
+            return ['status' => 'error', 'message' => 'Missing usuario_id parameter'];
+        }
+
+        $ci = (string)$data['usuario_id'];
+        $idBiometrico = isset($data['id_biometrico']) ? (int)$data['id_biometrico'] : (int)$ci;
+
+        $accessService = new AccessVerificationService();
+        $result = $accessService->verifyAccess($ci, $idBiometrico);
+
+        $this->pushEvent($result);
+
+        if ($result['status'] === 'error') {
+            Yii::$app->response->statusCode = 500;
+        }
+
+        return $result;
+    }
+
+    private function pushEvent(array $result): void
+    {
+        $filePath = Yii::getAlias('@runtime/access_events.json');
+        $events = [];
+
+        if (file_exists($filePath)) {
+            $content = file_get_contents($filePath);
+            $events = json_decode($content, true) ?: [];
+        }
+
+        $newEvent = [
+            'id' => uniqid(),
+            'timestamp' => date('Y-m-d H:i:s'),
+            'data' => $result,
+        ];
+
+        array_unshift($events, $newEvent);
+        $events = array_slice($events, 0, 50);
+
+        file_put_contents($filePath, json_encode($events, JSON_PRETTY_PRINT));
+    }
+
+    private function isDeviceOnline(): bool
+    {
+        $flaskUrl = Yii::$app->params['flask_api_url'] ?? 'http://localhost:5000';
+        $ch = curl_init($flaskUrl . '/api/status');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 2);
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return $httpCode === 200;
     }
 }
