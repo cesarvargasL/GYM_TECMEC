@@ -78,6 +78,7 @@ use yii\helpers\Url;
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     var manualCiInput = document.getElementById('manual-ci-input');
     var btnManualSearch = document.getElementById('btn-manual-search');
     var btnSimulate = document.getElementById('btn-simulate');
@@ -86,16 +87,23 @@ document.addEventListener('DOMContentLoaded', function() {
     var lastEventId = '0';
     var pollInterval = null;
 
+    var urls = {
+        pollEvents: '<?= Url::to(["access-control/poll-events"]) ?>',
+        manualSearch: '<?= Url::to(["access-control/manual-search"]) ?>',
+        debugMembership: '<?= Url::to(["access-control/debug-membership"]) ?>',
+        paymentIndex: '<?= Url::to(["payment/index"]) ?>'
+    };
+
     function startPolling() {
         checkDeviceStatus();
 
         pollInterval = setInterval(function() {
-            fetch('<?= Url::to(["access-control/poll-events"]) ?>?lastId=' + lastEventId)
+            fetch(urls.pollEvents + '?lastId=' + lastEventId, {
+                headers: { 'X-CSRF-Token': csrfToken }
+            })
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
-                    if (data.deviceOnline !== undefined) {
-                        updateDeviceStatus(data.deviceOnline);
-                    }
+                    updateDeviceStatus(data.deviceOnline);
 
                     if (data.events && data.events.length > 0) {
                         data.events.forEach(function(event) {
@@ -110,7 +118,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function checkDeviceStatus() {
-        fetch('<?= Url::to(["access-control/poll-events"]) ?>')
+        fetch(urls.pollEvents, {
+            headers: { 'X-CSRF-Token': csrfToken }
+        })
             .then(function(res) { return res.json(); })
             .then(function(data) {
                 updateDeviceStatus(data.deviceOnline);
@@ -148,15 +158,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function processAccess(ci) {
-        fetch('<?= Url::to(["access-control/manual-search"]) ?>', {
+        fetch(urls.manualSearch, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                'X-CSRF-Token': csrfToken
             },
             body: 'ci=' + encodeURIComponent(ci)
         })
-        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (!res.ok) {
+                return res.json().then(function(err) {
+                    throw new Error(err.message || 'Error del servidor');
+                });
+            }
+            return res.json();
+        })
         .then(function(data) {
             if (data.status === 'error') {
                 Swal.fire('Error', data.message, 'error');
@@ -165,8 +182,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 refreshAttendances();
             }
         })
-        .catch(function() {
-            Swal.fire('Error', 'Error de conexion', 'error');
+        .catch(function(err) {
+            Swal.fire('Error', err.message || 'Error de conexion', 'error');
         });
     }
 
@@ -220,7 +237,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        fetch('<?= Url::to(["access-control/debug-membership"]) ?>?ci=' + encodeURIComponent(ci))
+        fetch(urls.debugMembership + '?ci=' + encodeURIComponent(ci), {
+            headers: { 'X-CSRF-Token': csrfToken }
+        })
             .then(function(res) { return res.json(); })
             .then(function(data) {
                 var html = '<div style="text-align: left; font-size: 14px;">';
@@ -298,7 +317,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 confirmButtonColor: '#0056b3',
             }).then(function(result) {
                 if (result.isConfirmed) {
-                    window.location.href = '<?= Url::to(["payment/index"]) ?>';
+                    window.location.href = urls.paymentIndex;
                 }
             });
         } else if (data.status === 'error') {

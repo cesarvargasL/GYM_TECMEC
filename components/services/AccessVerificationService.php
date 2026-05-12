@@ -1,4 +1,5 @@
 <?php
+
 namespace app\components\services;
 
 use Yii;
@@ -37,7 +38,7 @@ class AccessVerificationService
 
         $attendance = new Attendance();
         $attendance->CI_CLIENTE = $ci;
-        $attendance->ID_BIOMETRICO = $idBiometrico;
+        $attendance->ID_BIOMETRICO = $idBiometrico > 0 ? $idBiometrico : (int)($user->ID_BIOMETRICO ?? 0);
         $attendance->CODIGO_MEMBRESIA = (int)$activeMembership->CODIGO_MEMBRESIA;
         $attendance->FECHA_DE_INGRESO = date('Y-m-d H:i:s');
 

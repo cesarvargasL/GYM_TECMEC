@@ -61,7 +61,7 @@ class AccessControlController extends Controller
 
         return [
             'events' => $newEvents,
-            'deviceOnline' => $this->isDeviceOnline(),
+            'deviceOnline' => $this->isBiometricDeviceOnline(),
         ];
     }
 
@@ -74,6 +74,8 @@ class AccessControlController extends Controller
             Yii::$app->response->statusCode = 400;
             return ['status' => 'error', 'message' => 'CI requerido'];
         }
+
+        $ci = preg_replace('/[^0-9]/', '', $ci);
 
         $accessService = new AccessVerificationService();
         $result = $accessService->verifyAccess($ci, (int)$ci);
@@ -92,6 +94,8 @@ class AccessControlController extends Controller
             Yii::$app->response->statusCode = 400;
             return ['status' => 'error', 'message' => 'CI requerido'];
         }
+
+        $ci = preg_replace('/[^0-9]/', '', $ci);
 
         $accessService = new AccessVerificationService();
         $result = $accessService->verifyAccess($ci, 0);
@@ -113,7 +117,7 @@ class AccessControlController extends Controller
             return ['status' => 'error', 'message' => 'Missing usuario_id parameter'];
         }
 
-        $ci = (string)$data['usuario_id'];
+        $ci = preg_replace('/[^0-9]/', '', (string)$data['usuario_id']);
         $idBiometrico = isset($data['id_biometrico']) ? (int)$data['id_biometrico'] : (int)$ci;
 
         $accessService = new AccessVerificationService();
@@ -137,6 +141,8 @@ class AccessControlController extends Controller
             Yii::$app->response->statusCode = 400;
             return ['error' => 'CI requerido'];
         }
+
+        $ci = preg_replace('/[^0-9]/', '', $ci);
 
         $user = User::findOne(['CI' => $ci, 'ES_BORRADO' => 0]);
         if (!$user) {
@@ -237,16 +243,28 @@ class AccessControlController extends Controller
         file_put_contents($filePath, json_encode($events, JSON_PRETTY_PRINT));
     }
 
-    private function isDeviceOnline(): bool
+    private function isBiometricDeviceOnline(): bool
     {
         $flaskUrl = Yii::$app->params['flask_api_url'] ?? 'http://localhost:5000';
-        $ch = curl_init($flaskUrl . '/api/status');
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 2);
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
-        return $httpCode === 200;
+        try {
+            $ch = curl_init($flaskUrl . '/api/status');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 2);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($httpCode !== 200 || $curlError) {
+                return false;
+            }
+
+            $data = json_decode($response, true);
+            return is_array($data) && isset($data['status']) && $data['status'] === 'online';
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 }

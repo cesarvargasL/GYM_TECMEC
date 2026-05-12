@@ -45,8 +45,10 @@ class ApiController extends Controller
             return ['status' => 'error', 'message' => 'Missing CI parameter'];
         }
 
+        $ci = preg_replace('/[^0-9]/', '', $data['ci']);
+
         $biometricService = new BiometricService();
-        $success = $biometricService->markFingerprintEnrolled($data['ci']);
+        $success = $biometricService->markFingerprintEnrolled($ci);
 
         if ($success) {
             return ['status' => 'success', 'message' => 'Fingerprint enrolled successfully'];
@@ -68,7 +70,7 @@ class ApiController extends Controller
             return ['status' => 'error', 'message' => 'Missing usuario_id parameter'];
         }
 
-        $ci = (string)$data['usuario_id'];
+        $ci = preg_replace('/[^0-9]/', '', (string)$data['usuario_id']);
         $idBiometrico = isset($data['id_biometrico']) ? (int)$data['id_biometrico'] : (int)$ci;
 
         $accessService = new AccessVerificationService();
