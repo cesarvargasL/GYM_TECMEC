@@ -21,13 +21,13 @@ class LoginForm extends Model
         ];
     }
 
-    public function validatePassword($attribute)
+    public function validatePassword($attribute, $params)
     {
         if (!$this->hasErrors()) {
             $user = $this->getUser();
 
             if (!$user || !$user->validatePassword($this->password)) {
-                $this->addError($attribute);
+                $this->addError($attribute, 'Usuario o contrasena incorrectos.');
             }
         }
     }
@@ -37,7 +37,7 @@ class LoginForm extends Model
         if ($this->validate()) {
             $user = $this->getUser();
             if ($user !== null) {
-                return Yii::$app->user->login($user, $this->rememberMe ? 3600*24*30 : 0);
+                return Yii::$app->user->login($user, $this->rememberMe ? 3600 * 24 * 30 : 0);
             }
         }
         return false;

@@ -23,7 +23,7 @@ class UserManagementController extends Controller
                         'matchCallback' => function ($rule, $action) {
                             $rol = Yii::$app->user->identity->ROL;
                             return $rol === Roles::SUPER_ADMIN->value || $rol === Roles::ADMINISTRATOR->value;
-                        }
+                        },
                     ],
                 ],
             ],
@@ -54,7 +54,7 @@ class UserManagementController extends Controller
 
     public function actionSoftDelete($id)
     {
-        $user = \app\models\User::findOne($id);
+        $user = \app\models\User::findOne(['CI' => $id, 'ES_BORRADO' => 0]);
         if ($user) {
             $user->ES_BORRADO = 1;
             $user->save(false);
@@ -65,7 +65,7 @@ class UserManagementController extends Controller
 
     public function actionHardDelete($id)
     {
-        $user = \app\models\User::findOne($id);
+        $user = \app\models\User::findOne(['CI' => $id]);
         if ($user) {
             $user->delete();
             Yii::$app->session->setFlash('success', 'Usuario purgado de la base de datos.');
@@ -77,7 +77,7 @@ class UserManagementController extends Controller
     {
         $this->layout = 'modules/dashboard/index';
         return $this->render('//modules/UserManagement/UpdateUser/index', [
-            'id' => $id
+            'id' => $id,
         ]);
     }
 }

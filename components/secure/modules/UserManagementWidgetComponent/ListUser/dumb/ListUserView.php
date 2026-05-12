@@ -86,7 +86,7 @@ use app\shared\enums\Roles;
                                             ✓ Registrada
                                         </span>
                                     <?php else: ?>
-                                        <button class="btn btn-warning btn-sm" style="border-radius: 15px; font-weight: bold; color: #333; font-size: 13px;" onclick="enrolarHuella('<?= $u->CI ?>', '<?= $u->ID_BIOMETRICO ?>')">
+                                        <button class="btn btn-warning btn-sm" style="border-radius: 15px; font-weight: bold; color: #333; font-size: 13px;" onclick="enrolarHuella('<?= $u->CI ?>', '<?= $u->ID_BIOMETRICO ?>', '<?= Html::encode($u->NOMBRE_COMPLETO) ?>')">
                                             + Enrolar Huella
                                         </button>
                                     <?php endif; ?>
@@ -188,19 +188,87 @@ use app\shared\enums\Roles;
         });
     }
 
-    function enrolarHuella(ci, idBiometrico) {
+    function enrolarHuella(ci, idBiometrico, nombre) {
         Swal.fire({
             title: '¿Enrolar Huella?',
-            text: "Se activará el dispositivo ZKTeco para el ID: " + idBiometrico,
+            text: "Se activara el dispositivo ZKTeco para: " + nombre,
             icon: 'info',
             showCancelButton: true,
             confirmButtonColor: '#0056b3',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Sí, activar lector'
+            confirmButtonText: 'Si, activar lector'
         }).then((result) => {
             if (result.isConfirmed) {
-                Swal.fire('¡Esperando Lector!', 'Por favor ponga el dedo en el dispositivo...', 'warning');
+                Swal.fire({
+                    title: 'Enrolando...',
+                    text: 'Por favor ponga el dedo en el dispositivo ZKTeco',
+                    icon: 'info',
+                    showConfirmButton: false,
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+
+                        fetch('http://localhost:5000/api/registrar', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                uid: parseInt(ci),
+                                user_id: ci,
+                                nombre: nombre
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                pollEnrollmentStatus(ci, nombre);
+                            } else {
+                                Swal.fire('Error', data.message || 'Error al iniciar enrolamiento', 'error');
+                            }
+                        })
+                        .catch(err => {
+                            Swal.fire('Error', 'No se pudo conectar al agente local. Verifique que Python esta corriendo.', 'error');
+                        });
+                    }
+                });
             }
         });
+    }
+
+    function pollEnrollmentStatus(ci, nombre) {
+        let attempts = 0;
+        const maxAttempts = 60;
+
+        const interval = setInterval(() => {
+            attempts++;
+
+            fetch('http://localhost:5000/api/estado-enrolamiento')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'completado') {
+                        clearInterval(interval);
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Huella Registrada',
+                            text: 'La huella de ' + nombre + ' fue enrolada exitosamente.',
+                            confirmButtonText: 'OK'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else if (data.status === 'error') {
+                        clearInterval(interval);
+                        Swal.fire('Error', data.mensaje || 'Error en el enrolamiento', 'error');
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(interval);
+                        Swal.fire('Timeout', 'Tiempo de espera agotado. Intente nuevamente.', 'warning');
+                    }
+                })
+                .catch(() => {
+                    if (attempts >= maxAttempts) {
+                        clearInterval(interval);
+                        Swal.fire('Error', 'Error de conexion con el agente', 'error');
+                    }
+                });
+        }, 2000);
+    }
     }
 </script>

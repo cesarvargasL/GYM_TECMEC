@@ -41,7 +41,8 @@ use app\shared\enums\ClientType;
                 <?= $form->field($model, 'email')->textInput()->label('Correo Electrónico') ?>
             </div>
             <div class="col-md-6">
-                <?= $form->field($model, 'phone')->textInput()->label('Teléfono') ?>
+                <?= $form->field($model, 'phone')->textInput()->label('Telefono') ?>
+            </div>
             <div class="col-md-12">
                 <?= $form->field($model, 'newPassword')->passwordInput(['placeholder' => 'Dejar en blanco para no cambiar'])->label('Resetear Contraseña') ?>
             </div>
