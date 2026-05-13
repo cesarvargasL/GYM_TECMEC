@@ -232,6 +232,18 @@ $isAdmin = $currentUserRole === Roles::ADMINISTRATOR->value || $currentUserRole 
             border-color: #28a745;
         }
 
+        .calendar-day.missed {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+
+        .calendar-day.future {
+            background: #e2e3e5;
+            border-color: #ccc;
+            color: #999;
+        }
+
         .calendar-day.today {
             border: 2px solid #0056b3;
             font-weight: bold;
@@ -288,10 +300,9 @@ $isAdmin = $currentUserRole === Roles::ADMINISTRATOR->value || $currentUserRole 
 
         <ul class="nav-links">
             <?php if ($isAdmin): ?>
-                <li><a href="<?= Url::to(['user-management/create']) ?>" class="<?= $currentRoute === 'user-management/create' ? 'active' : AppConst::EMPTY ?>">Crear Usuario</a></li>
+                <li><a href="<?= Url::to(['user-management/create']) ?>" class="<?= $currentRoute === 'user-management/create' ? 'active' : AppConst::EMPTY ?>">Crear / Registrar usuario</a></li>
                 <li><a href="<?= Url::to(['user-management/index']) ?>" class="<?= $currentRoute === 'user-management/index' ? 'active' : AppConst::EMPTY ?>">Usuarios</a></li>
                 <li><a href="<?= Url::to(['access-control/index']) ?>" class="<?= $currentRoute === 'access-control/index' ? 'active' : AppConst::EMPTY ?>">Control de Entrada</a></li>
-                <li><a href="<?= Url::to(['dashboard/index']) ?>" class="<?= $currentRoute === 'dashboard/index' ? 'active' : AppConst::EMPTY ?>">Registro</a></li>
                 <li><a href="<?= Url::to(['history/index']) ?>" class="<?= $currentRoute === 'history/index' ? 'active' : AppConst::EMPTY ?>">Historial</a></li>
                 <li><a href="<?= Url::to(['payment/index']) ?>" class="<?= $currentRoute === 'payment/index' ? 'active' : AppConst::EMPTY ?>">Pagos</a></li>
                 <li><a href="<?= Url::to(['membership/index']) ?>" class="<?= $currentRoute === 'membership/index' ? 'active' : AppConst::EMPTY ?>">Membresias</a></li>

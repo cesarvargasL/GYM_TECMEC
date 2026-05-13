@@ -12,11 +12,14 @@ class MembershipContainer extends Widget
     {
         $request = Yii::$app->request;
         $search = $request->get('search', '');
+        $today = date('Y-m-d');
 
         $query = Membership::find()
             ->alias('m')
             ->joinWith(['client c', 'plan p'])
-            ->where(['m.ES_BORRADO' => 0]);
+            ->where(['m.ES_BORRADO' => 0])
+            ->andWhere(['<=', 'm.FECHA_INICIO', $today])
+            ->andWhere(['>=', 'm.FECHA_FIN', $today]);
 
         if (!empty($search)) {
             $query->andWhere(['or',

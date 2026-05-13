@@ -84,20 +84,43 @@ document.addEventListener('DOMContentLoaded', function() {
     var btnSimulate = document.getElementById('btn-simulate');
     var btnDebug = document.getElementById('btn-debug');
     var deviceStatus = document.getElementById('device-status');
-    var lastEventId = '0';
+    var lastEventId = null;
     var pollInterval = null;
+    var isProcessingManual = false;
 
     var urls = {
         pollEvents: '<?= Url::to(["access-control/poll-events"]) ?>',
         manualSearch: '<?= Url::to(["access-control/manual-search"]) ?>',
         debugMembership: '<?= Url::to(["access-control/debug-membership"]) ?>',
-        paymentIndex: '<?= Url::to(["payment/index"]) ?>'
+        paymentIndex: '<?= Url::to(["payment/index"]) ?>',
+        clearEvents: '<?= Url::to(["access-control/clear-events"]) ?>'
     };
+
+    function initLastEventId() {
+        fetch(urls.pollEvents + '?init=true', {
+            headers: { 'X-CSRF-Token': csrfToken }
+        })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.currentLastId) {
+                    lastEventId = data.currentLastId;
+                } else {
+                    lastEventId = '0';
+                }
+                startPolling();
+            })
+            .catch(function() {
+                lastEventId = '0';
+                startPolling();
+            });
+    }
 
     function startPolling() {
         checkDeviceStatus();
 
         pollInterval = setInterval(function() {
+            if (isProcessingManual) return;
+
             fetch(urls.pollEvents + '?lastId=' + lastEventId, {
                 headers: { 'X-CSRF-Token': csrfToken }
             })
@@ -144,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var tbody = document.getElementById('recent-attendances-body');
         if (!tbody) return;
 
-        fetch('<?= Url::to(["access-control/index"]) ?>')
+        fetch(window.location.href)
             .then(function(res) { return res.text(); })
             .then(function(html) {
                 var parser = new DOMParser();
@@ -157,8 +180,9 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(function() {});
     }
 
-    function processAccess(ci) {
-        fetch(urls.manualSearch, {
+    function processAccess(ci, showPopup) {
+        isProcessingManual = true;
+        return fetch(urls.manualSearch, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -177,13 +201,17 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(function(data) {
             if (data.status === 'error') {
                 Swal.fire('Error', data.message, 'error');
-            } else {
+            } else if (showPopup !== false) {
                 showAccessPopup(data);
                 refreshAttendances();
             }
+            return data;
         })
         .catch(function(err) {
             Swal.fire('Error', err.message || 'Error de conexion', 'error');
+        })
+        .finally(function() {
+            setTimeout(function() { isProcessingManual = false; }, 1000);
         });
     }
 
@@ -196,10 +224,10 @@ document.addEventListener('DOMContentLoaded', function() {
         btnManualSearch.disabled = true;
         btnManualSearch.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Verificando...';
 
-        processAccess(ci);
-
-        btnManualSearch.disabled = false;
-        btnManualSearch.innerHTML = 'Verificar';
+        processAccess(ci, true).finally(function() {
+            btnManualSearch.disabled = false;
+            btnManualSearch.innerHTML = 'Verificar';
+        });
     });
 
     manualCiInput.addEventListener('keypress', function(e) {
@@ -222,11 +250,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 confirmButtonColor: '#ffc107',
             }).then(function(result) {
                 if (result.isConfirmed && result.value) {
-                    processAccess(result.value);
+                    processAccess(result.value, true);
                 }
             });
         } else {
-            processAccess(ci);
+            processAccess(ci, true);
         }
     });
 
@@ -325,7 +353,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    startPolling();
+    initLastEventId();
 
     window.addEventListener('beforeunload', function() {
         if (pollInterval) {

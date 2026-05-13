@@ -4,6 +4,7 @@ namespace app\components\secure\modules\UserManagementWidgetComponent\CreateUser
 use Yii;
 use yii\base\Widget;
 use app\models\User;
+use app\models\Plan;
 use app\shared\AppConst;
 use app\shared\enums\Roles;
 use app\shared\enums\ClientType;
@@ -16,6 +17,7 @@ class CreateUserContainer extends Widget
     public function run()
     {
         $model = new User();
+        $plans = Plan::find()->where(['ESTADO' => 'ACTIVO'])->all();
 
         $currentUserRole = $this->isPublicContext ? null : Yii::$app->user->identity->ROL;
 
@@ -25,7 +27,7 @@ class CreateUserContainer extends Widget
                 $model->ROL = Roles::CLIENT->value; 
             } else {
                 if ($currentUserRole === Roles::ADMINISTRATOR->value && $model->ROL !== Roles::CLIENT->value) {
-                    Yii::$app->session->setFlash('error', 'Violación de Seguridad: No tienes permisos para crear este tipo de usuario.');
+                    Yii::$app->session->setFlash('error', 'Violacion de Seguridad: No tienes permisos para crear este tipo de usuario.');
                     Yii::$app->response->redirect(['user-management/create']);
                     Yii::$app->end();
                     return AppConst::EMPTY;
@@ -66,7 +68,7 @@ class CreateUserContainer extends Widget
                     if ($model->save(false)) {
                         
                         if ($this->isPublicContext) {
-                            Yii::$app->session->setFlash('success', 'Registro exitoso. Por favor, inicia sesión.');
+                            Yii::$app->session->setFlash('success', 'Registro exitoso. Por favor, inicia sesion.');
                             Yii::$app->response->redirect(['login/login']);
                         } else {
                             Yii::$app->session->setFlash('success', 'Usuario creado correctamente.');
@@ -99,7 +101,8 @@ class CreateUserContainer extends Widget
         return $this->render('@app/components/secure/modules/UserManagementWidgetComponent/CreateUser/dumb/CreateUserFormView', [
             'model' => $model,
             'availableRoles' => $availableRoles,
-            'isPublicContext' => $this->isPublicContext 
+            'isPublicContext' => $this->isPublicContext,
+            'plans' => $plans,
         ]);
     }
 }

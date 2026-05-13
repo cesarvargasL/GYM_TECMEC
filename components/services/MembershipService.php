@@ -16,6 +16,33 @@ class MembershipService
             return null;
         }
 
+        $today = date('Y-m-d');
+        
+        $existingActive = Membership::find()
+            ->where([
+                'CI_CLIENTE' => $clientCi,
+                'ES_BORRADO' => 0,
+            ])
+            ->andWhere(['<=', 'FECHA_INICIO', $today])
+            ->andWhere(['>=', 'FECHA_FIN', $today])
+            ->orderBy(['CODIGO_MEMBRESIA' => SORT_DESC])
+            ->one();
+
+        if ($existingActive) {
+            $daysCount = $plan->getDaysCount();
+            $newEndDate = date('Y-m-d', strtotime($existingActive->FECHA_FIN . " +{$daysCount} days"));
+            
+            $existingActive->FECHA_FIN = $newEndDate;
+            $existingActive->DIAS_ASIGNADOS += $daysCount;
+            $existingActive->DIAS_DISPONIBLES += $daysCount;
+            $existingActive->ID_PLAN = $planId;
+
+            if ($existingActive->save(false)) {
+                return $existingActive;
+            }
+            return null;
+        }
+
         $daysCount = $plan->getDaysCount();
         $startDate = date('Y-m-d');
         $endDate = date('Y-m-d', strtotime("+{$daysCount} days"));
@@ -42,6 +69,21 @@ class MembershipService
             return $membership->save(false);
         }
         return false;
+    }
+
+    public function getActiveMembershipForClient(string $clientCi): ?Membership
+    {
+        $today = date('Y-m-d');
+        return Membership::find()
+            ->where([
+                'CI_CLIENTE' => $clientCi,
+                'ES_BORRADO' => 0,
+            ])
+            ->andWhere(['<=', 'FECHA_INICIO', $today])
+            ->andWhere(['>=', 'FECHA_FIN', $today])
+            ->with(['plan'])
+            ->orderBy(['CODIGO_MEMBRESIA' => SORT_DESC])
+            ->one();
     }
 
     public function getActiveMembershipsForClient(string $clientCi): array

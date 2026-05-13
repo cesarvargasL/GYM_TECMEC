@@ -11,8 +11,10 @@ class HistoryContainer extends Widget
     public function run()
     {
         $request = Yii::$app->request;
-        $dateFrom = $request->get('date_from', date('Y-m-01'));
-        $dateTo = $request->get('date_to', date('Y-m-d'));
+        $today = date('Y-m-d');
+        
+        $dateFrom = $request->get('date_from', $today);
+        $dateTo = $request->get('date_to', $today);
         $search = $request->get('search', '');
 
         $query = Attendance::find()

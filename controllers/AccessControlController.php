@@ -44,13 +44,21 @@ class AccessControlController extends Controller
 
         $filePath = Yii::getAlias('@runtime/access_events.json');
         $lastId = Yii::$app->request->get('lastId', '0');
+        $init = Yii::$app->request->get('init', false);
 
         if (!file_exists($filePath)) {
+            if ($init) {
+                return ['currentLastId' => '0', 'deviceOnline' => false];
+            }
             return ['events' => [], 'deviceOnline' => false];
         }
 
         $content = file_get_contents($filePath);
         $events = json_decode($content, true) ?: [];
+
+        if ($init && !empty($events)) {
+            return ['currentLastId' => $events[0]['id'], 'deviceOnline' => $this->isBiometricDeviceOnline()];
+        }
 
         $newEvents = [];
         foreach ($events as $event) {
@@ -63,6 +71,16 @@ class AccessControlController extends Controller
             'events' => $newEvents,
             'deviceOnline' => $this->isBiometricDeviceOnline(),
         ];
+    }
+
+    public function actionClearEvents()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $filePath = Yii::getAlias('@runtime/access_events.json');
+        if (file_exists($filePath)) {
+            file_put_contents($filePath, json_encode([]));
+        }
+        return ['status' => 'ok'];
     }
 
     public function actionSimulateAccess()

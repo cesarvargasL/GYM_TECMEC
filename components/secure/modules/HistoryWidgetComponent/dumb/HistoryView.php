@@ -13,19 +13,54 @@ use yii\widgets\LinkPager;
         <form id="filter-form" method="GET" action="<?= Url::to(['history/index']) ?>" style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: flex-end;">
             <div>
                 <label style="font-size: 13px; color: #666;">Desde</label><br>
-                <input type="date" name="date_from" value="<?= Html::encode($dateFrom) ?>" style="padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
+                <input type="date" name="date_from" id="date-from" value="<?= Html::encode($dateFrom) ?>" style="padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
             </div>
             <div>
                 <label style="font-size: 13px; color: #666;">Hasta</label><br>
-                <input type="date" name="date_to" value="<?= Html::encode($dateTo) ?>" style="padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
+                <input type="date" name="date_to" id="date-to" value="<?= Html::encode($dateTo) ?>" style="padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
             </div>
             <div style="flex-grow: 1;">
                 <label style="font-size: 13px; color: #666;">Buscar</label><br>
-                <input type="text" name="search" value="<?= Html::encode($search) ?>" placeholder="Nombre o CI..." style="padding: 8px; border-radius: 5px; border: 1px solid #ccc; width: 100%;">
+                <input type="text" name="search" id="search-input" value="<?= Html::encode($search) ?>" placeholder="Nombre o CI..." style="padding: 8px; border-radius: 5px; border: 1px solid #ccc; width: 100%;">
             </div>
             <button type="submit" class="btn btn-primary" style="border-radius: 5px;">Filtrar</button>
             <a href="<?= Url::to(['history/index']) ?>" class="btn btn-light" style="border-radius: 5px;">Limpiar</a>
         </form>
+
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var dateFrom = document.getElementById('date-from');
+            var dateTo = document.getElementById('date-to');
+            var searchInput = document.getElementById('search-input');
+            var form = document.getElementById('filter-form');
+            var dateToChanged = false;
+
+            if (dateTo) {
+                dateTo.addEventListener('change', function() {
+                    dateToChanged = true;
+                    form.submit();
+                });
+            }
+
+            if (dateFrom) {
+                dateFrom.addEventListener('change', function() {
+                    if (dateToChanged) {
+                        form.submit();
+                    }
+                });
+            }
+
+            if (searchInput) {
+                var searchTimeout = null;
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(function() {
+                        form.submit();
+                    }, 500);
+                });
+            }
+        });
+        </script>
 
         <div style="overflow-x: auto;">
             <table style="width: 100%; border-collapse: collapse;">
