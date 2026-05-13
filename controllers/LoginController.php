@@ -54,12 +54,20 @@ class LoginController extends Controller
     public function actionLogin(): Response|string
     {
         if (!Yii::$app->user->isGuest) {
-            return $this->redirect(['dashboard/index']);
+            $user = Yii::$app->user->identity;
+            if ($user->ROL === 'CLIENTE') {
+                return $this->redirect(['dashboard/index']);
+            }
+            return $this->redirect(['access-control/index']);
         }
 
         $model = new \app\models\LoginForm();
         if ($model->load(Yii::$app->request->post()) && $model->login()) {
-            return $this->redirect(['dashboard/index']);
+            $user = Yii::$app->user->identity;
+            if ($user->ROL === 'CLIENTE') {
+                return $this->redirect(['dashboard/index']);
+            }
+            return $this->redirect(['access-control/index']);
         }
 
         $this->layout = 'modules/login/index';
